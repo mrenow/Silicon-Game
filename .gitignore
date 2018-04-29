@@ -2,3 +2,5 @@ bin/
 .settings
 *.class
 ignore/
+.classpath
+.project
