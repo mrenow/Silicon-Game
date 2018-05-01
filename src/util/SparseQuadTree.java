@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import static util.DB.*;
 import static core.MainProgram.*;
+import static processing.core.PApplet.println;
 
 /* A range tree that stores pointers to elements.
  * Each element of the range tree stores a list of all
@@ -22,6 +23,7 @@ public class SparseQuadTree<T> {
 	// 0 1
 	// 2 3
 	SparseQuadTree[] children = new SparseQuadTree[4];
+	SparseQuadTree<T> parent = null;
 
 	// linked list has ideal properties:
 	// O(1) append list
@@ -39,13 +41,15 @@ public class SparseQuadTree<T> {
 	public SparseQuadTree(int depth, T[][] data) {
 		this(depth);
 		int[] dim = ArraysX.dimensions(data);
-		DB_ASSERT(dim[0], length * length);
-		DB_ASSERT(dim[1], length * length);
+		DB_ASSERT(dim[0], length);
+		DB_ASSERT(dim[1], length);
+		//TODO
 	}
 
 	public SparseQuadTree(int depth, SparseQuadTree<T> parent) {
 		this(depth);
 		parent.elements.add(elements);
+		this.parent = parent;
 
 	}
 
@@ -55,17 +59,26 @@ public class SparseQuadTree<T> {
 	}
 
 	public boolean remove(T element, int x, int y) {
+		SparseQuadTree<T> t = getLowestSubtree(x, y);
+		if (t.depth == 0) {
+			DB_U(element, "removed from", t.elements, "in", this);
+			boolean removed = t.elements.remove(element);
+			
+			if(t.elements.empty()) update(x,y);
+			
+			return removed;
+		}
 		return false;
 	}
 
 	// removes all elements from a specified unit square
 	public void delete(int x, int y) {
 		SparseQuadTree<T> t = getLowestSubtree(x, y);
-		println("el: ",t.elements);
 		if (t.depth == 0) {
-			println(new LinkedList<T>(elements), " deleted");
+			DB_U(new LinkedList<T>(t.elements), " deleted in ", this);
 			t.elements.clear();
 		}
+		update(x,y);
 	}
 
 	// removes all elements from a specfied range
@@ -84,7 +97,11 @@ public class SparseQuadTree<T> {
 
 	public LinkedList<T> get(int x, int y) {
 		// make a copy of the pointers.
-		return new LinkedList<T>(getPointerTo(x, y).elements);
+		SparseQuadTree<T> t = getLowestSubtree(x, y);
+		if(t.depth == 0) {
+			return new LinkedList<T>(t.elements);
+		}
+		return new LinkedList<T>();
 	}
 
 	public LinkedList<T> get(int x1, int x2, int y1, int y2) {
@@ -126,6 +143,30 @@ public class SparseQuadTree<T> {
 	public String toString() {
 		return super.toString();
 	}
+	private void update(int x, int y) {
+		if (depth == 0) {
+			return;
+		}
+		// ensure query remains within bounds.
+		if (!DB_ASSERT(inRange(x, y), true)) {
+			DB_E(x,y,"Not in range of quadtree of length",length);
+			throw new ArrayIndexOutOfBoundsException();
+		}
+		
+		int halflength = length / 2;
+		int id =  (y < halflength ? 0 : 2) + (x < halflength ? 0 : 1);
+		
+		if (children[id] != null) {
+			if(!children[id].elements.empty()) {
+				// x & ~halflength replaces x % halflength
+				children[id].update(x & ~halflength, y & ~halflength);
+			} else {
+				elements.remove(children[id].elements);
+				//existing is for noobs
+				children[id] = null;
+			}
+		}
+	}
 
 	private SparseQuadTree<T> getLowestSubtree(int x, int y) {
 		if (depth == 0) {
@@ -137,42 +178,19 @@ public class SparseQuadTree<T> {
 			throw new ArrayIndexOutOfBoundsException();
 		}
 		int halflength = length / 2;
-		int j = y < halflength ? 0 : 1;
-		int i = x < halflength ? 0 : 1;
-	
-		switch (j * 2 + i) {
-		case 0:
-			if (children[0] != null)
-				return children[0].getLowestSubtree(x, y);
-	
-			else
-				return this;
-		case 1:
-			if (children[1] != null)
-				return children[1].getLowestSubtree(x - halflength, y);
-	
-			else
-				return this;
-		case 2:
-			if (children[2] != null)
-				return children[2].getLowestSubtree(x, y - halflength);
-			else
-				return this;
-		case 3:
-			if (children[3] != null)
-				return children[3].getLowestSubtree(x - halflength, y - halflength);
-			else
-				return this;
-		default:
-			return null;
+		
+		int id =  (y < halflength ? 0 : 2) + (x < halflength ? 0 : 1);
+		if (children[id] != null) {
+			return children[id].getLowestSubtree(x & ~halflength, y & ~halflength);
 		}
+		
+		return this;
 	}
 
 	// gets pointer if exists or creates new one
 	
 	private SparseQuadTree<T> getPointerTo(int x, int y) {
 		if (depth == 0) {
-			println(elements);
 			return this;
 		}
 		// ensure query remains within bounds.
@@ -183,38 +201,17 @@ public class SparseQuadTree<T> {
 			throw new ArrayIndexOutOfBoundsException();
 		}
 		int halflength = length / 2;
-		int j = y < halflength ? 0 : 1;
-		int i = x < halflength ? 0 : 1;
-	
-		switch (j * 2 + i) {
-		case 0:
-			if (children[0] == null) {
-				children[0] = new SparseQuadTree<T>(depth - 1, this);
-			}
-			return children[0].getPointerTo(x, y);
-	
-		case 1:
-			if (children[1] == null) {
-				children[1] = new SparseQuadTree<T>(depth - 1, this);
-			}
-			return children[1].getPointerTo(x - halflength, y);
-	
-		case 2:
-			if (children[2] == null) {
-				children[2] = new SparseQuadTree<T>(depth - 1, this);
-			}
-			return children[2].getPointerTo(x, y - halflength);
-	
-		case 3:
-			if (children[3] == null) {
-				children[3] = new SparseQuadTree<T>(depth - 1, this);
-			}
-			return children[3].getPointerTo(x - halflength, y - halflength);
-	
-		default:
-			return null;
-		}
 		
+		int id =  (y < halflength ? 0 : 2) + (x < halflength ? 0 : 1);
+		if (children[id] == null) {
+			children[id] = new SparseQuadTree<T>(depth - 1, this);
+		}
+		return children[id].getPointerTo(x & ~halflength, y & ~halflength);	
+	}
+	
+	public SparseQuadTree<T> getAncestor(){
+		if(parent == null) return this;
+		return parent.getAncestor();
 	}
 
 	private boolean inRange(int x, int y) {

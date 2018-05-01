@@ -8,21 +8,22 @@ import java.util.ListIterator;
 
 /*
  * An empty linked list contains one node, the start node. The payload is null.
+ * Also, welcome to Pointer Hell. Is it your first time here?
  */
 public class LinkedList<T> implements Iterable<T> {
 
 	// only to be referenced by internal functions.
-	protected Node start;
-	protected Node end;
+	protected Node<T> start;
+	protected Node<T> end;
 
 	// Pointer state variables
 	// NOT THREAD SAFE AT ALL: MOVE TO ITERATORS.
-	Node focus;
+	Node<T> focus;
 	int index;
 
 	// start -> end
 	public LinkedList() {
-		start = new Node(Node.START, end = new Node(Node.END,null));
+		start = new Node<T>(Node.START, end = new Node<T>(Node.END,null));
 		index = 0;
 	}
 
@@ -33,19 +34,18 @@ public class LinkedList<T> implements Iterable<T> {
 	}
 
 	// linked
-	public LinkedList(T... e) {
+	public LinkedList(T... list) {
 		this();
-		for (int i = 0; i < e.length; i++) {
-			add(e[i]);
+		for (int i = 0; i < list.length; i++) {
+			add(list[i]);
 		}
 	}
 
 	// makes a copy of a linked list down to node payload
 	public LinkedList(LinkedList<T> list) {
 		this();
-		Iterator<T> iterator = list.iterator();
-		while (iterator.hasNext()) {
-			add(iterator.next());
+		for(T e : list) {
+			add(e);
 		}
 	}
 
@@ -76,7 +76,7 @@ public class LinkedList<T> implements Iterable<T> {
 	}
 
 	public void addFirst(T e) {
-		start.next = new Node(e, start.next);
+		start.next = new Node<T>(e, start.next);
 	}
 
 	// *y*
@@ -96,7 +96,7 @@ public class LinkedList<T> implements Iterable<T> {
 	// append to end of list. End node transforms into payload node.
 	// new end node is inserted.
 	public void add(T e) {
-		end.assume(new Node(e,end = new Node(Node.END,end.next)));
+		end.assume(new Node<T>(e,end = new Node<T>(Node.END,end.next)));
 	}
 
 	public void add(T... list) {
@@ -108,10 +108,10 @@ public class LinkedList<T> implements Iterable<T> {
 	// *y*
 	// End transforms into new lists start node
 	public void add(LinkedList<T> list) {
-		Node endnext = end.next;
+		Node<T> endnext = end.next;
 		end.assume(list.start);
 		list.start = end;
-		list.end.setNext((end = new Node(Node.END,endnext)));
+		list.end.setNext((end = new Node<T>(Node.END,endnext)));
 
 	}
 
@@ -119,17 +119,17 @@ public class LinkedList<T> implements Iterable<T> {
 	public void addAt(int i, T e) {
 		resetFocus();
 		focusTo(i);
-		Node e1 = new Node(e, focus.getNext());
+		Node<T> e1 = new Node<T>(e, focus.getNext());
 		focus.setNext(e1);
 	}
 
 	public void addAt(int i, T... list) {
 		resetFocus();
 		focusTo(i);
-		Node next = focus.getNext();
-		Node prev = focus;
+		Node<T> next = focus.getNext();
+		Node<T> prev = focus;
 		for (T e : list) {
-			prev.setNext(new Node(e, null));
+			prev.setNext(new Node<T>(e, null));
 			prev = prev.getNext();
 		}
 		prev.setNext(next);
@@ -147,7 +147,7 @@ public class LinkedList<T> implements Iterable<T> {
 	public T take(int i) {
 		resetFocus();
 		focusTo(i);
-		Node next = focus.getNext();
+		Node<T> next = focus.getNext();
 		if (isLast(focus)) {
 			throw new ArrayIndexOutOfBoundsException(Integer.toString(i + 1) + ">" + Integer.toString(index));
 		}
@@ -167,19 +167,44 @@ public class LinkedList<T> implements Iterable<T> {
 		focus.setNext(focus.getNext().next); // parent = grandparent, skipping one element.
 		return true;
 	}
-
+	// Searches for the start node of list
+	// Assumes that the existence of a start node implies an end node.
+	public boolean remove(LinkedList<T> list) {
+		Node<T> curr = start;
+		
+		while(curr.next != list.start) {
+			if(curr == end) return false;
+			curr = curr.next;
+		}
+		curr.next = list.end.next;
+		//separate list from parent for safety
+		list.end.next = null;
+		return true;
+	}
+	
 	// clear all contents of list.
 	public void clear() {
 		start.next = end;
 	}
-
+	public boolean empty() {
+		return isLast(start);
+	}
+	//removes its existence from parent if exists.
+	public void delete() {
+		if(end.next != null) {
+			start.assume(end.next);
+			end.next = start;
+		}
+	}
+	
+	// UNTESTED
 	// splits before element at specified index
 	public LinkedList<T>[] split(int i) {
 		if (i == 0)
 			return new LinkedList[] { new LinkedList(), new LinkedList(start.getNext()) };
 		resetFocus();
 		focusTo(i);
-		Node start2 = focus.switchNext(null);
+		Node<T> start2 = focus.switchNext(null);
 		return new LinkedList[] { new LinkedList(start.getNext()), new LinkedList(start2) };
 	}
 
@@ -227,12 +252,23 @@ public class LinkedList<T> implements Iterable<T> {
 		StringBuilder out = new StringBuilder(5);
 		out.append("LinkedList:[ ");
 		
-		Node curr = start;
+		Node<T> curr = start;
 		while(curr != null && curr != end.next) {
 			if(curr.mode == Node.START) {
-				out.append("+, ");
+				if(curr == start) {
+					out.append("S, ");
+				}
+				else {
+					out.append("+, ");
+				}
 			}else if(curr.mode == Node.END) {
-				out.append("-, ");
+				if(curr == end) {
+					out.append("E, ");
+				}else {
+					out.append("-, ");
+					
+				}
+				
 			} else {
 				out.append(curr.o.toString());
 				out.append(", ");
@@ -260,9 +296,15 @@ public class LinkedList<T> implements Iterable<T> {
 		} else
 			return false;
 	}
-	boolean isLast(Node n) {
-		Node nextnode = n.next;
+	boolean isLast(Node<T> n) {
+		Node<T> nextnode = n.next;
 		while (nextnode != end) {
+			if(nextnode.next == null) {
+				println("broken ",this);
+				println(nextnode.o);
+				println(nextnode.mode);
+				
+			}
 			if(nextnode.mode == Node.NODE) {
 				return false;	
 			}
@@ -274,7 +316,7 @@ public class LinkedList<T> implements Iterable<T> {
 	 * public void destroy() { start.next = last = focus = null; index = -1; } //
 	 * creates a new linked list starting at a certain node. If a loop is //
 	 * encountered, it will break the loop forming a linked list that way. public
-	 * LinkedList(Node n) { this(); start.next = n; last = n.next; while (last !=
+	 * LinkedList(Node<T> n) { this(); start.next = n; last = n.next; while (last !=
 	 * start.next && last.next != null) { last = last.next; } }
 	 */
 
@@ -283,7 +325,7 @@ public class LinkedList<T> implements Iterable<T> {
 	// ACTUALLY I KINDA DOUBT IT THIS WAS A WASTE OF MY TIME
 	// I GUESS IF YOURE NOT WRITING ITS A OKAY
 	private class LinkedIterator implements ListIterator<T> {
-		Node curr;
+		Node<T> curr;
 		int id;
 
 		public LinkedIterator() {
@@ -302,7 +344,7 @@ public class LinkedList<T> implements Iterable<T> {
 		@Override
 		//adds 
 		public void add(T e) {
-			curr = (curr.setNext(new Node(e, curr.getNext())));
+			curr = (curr.setNext(new Node<T>(e, curr.getNext())));
 			index++;
 		}
 
@@ -340,66 +382,67 @@ public class LinkedList<T> implements Iterable<T> {
 		}
 	};
 
-	private class Node {
-		private Node next;
-		public byte mode = 0;
-		public static final byte START = 1;
-		public static final byte END = 2;
-		public static final byte NODE = 0;
-		
-		T o;
 
-		Node(T o, Node next) {
-			this.o = o;
-			this.setNext(next);
+}
+class Node<T>{
+	Node<T> next;
+	public byte mode = 0;
+	public static final byte START = 1;
+	public static final byte END = 2;
+	public static final byte NODE = 0;
+	
+	T o;
+
+	Node(T o, Node<T> next) {
+		this.o = o;
+		this.setNext(next);
+	}
+
+	Node(byte mode, Node<T> next) {
+		this.o = null;
+		this.setNext(next);
+		this.mode = mode;
+	}
+
+	Node<T> switchNext(Node<T> next) {
+		Node<T> old = this.getNext();
+		this.setNext(next);
+		return old;
+	}
+
+	void set(T e) {
+		o = e;
+	}
+
+	// copy node into self
+	void assume(Node<T> n) {
+		this.o = n.o;
+		this.next = n.next;
+		this.mode = n.mode;
+
+	}
+
+	Node<T> nextElement() {
+		Node<T> nextnode = getNext();
+		while (nextnode.mode!=NODE) {
+			nextnode = nextnode.getNext();
 		}
+		return nextnode;
+	}
 
-		Node(byte mode, Node next) {
-			this.o = null;
-			this.setNext(next);
-			this.mode = mode;
+	Node<T> getNext() {
+		Node<T> nextnode = next;
+		while (nextnode.mode!=NODE) {
+			nextnode = nextnode.next;
 		}
+		return nextnode;
+	}
 
-		Node switchNext(Node next) {
-			Node old = this.getNext();
-			this.setNext(next);
-			return old;
+	Node<T> setNext(Node<T> next) {
+		Node<T> node = this;
+		while (node.next != null && node.next.mode!=NODE) {
+			node = node.next;
 		}
-
-		void set(T e) {
-			o = e;
-		}
-
-		// copy node into self
-		void assume(Node n) {
-			this.o = n.o;
-			this.next = n.next;
-			this.mode = n.mode;
-
-		}
-
-		Node nextElement() {
-			Node nextnode = getNext();
-			while (nextnode.mode!=NODE) {
-				nextnode = nextnode.getNext();
-			}
-			return nextnode;
-		}
-
-		Node getNext() {
-			Node nextnode = next;
-			while (nextnode.mode!=NODE) {
-				nextnode = nextnode.next;
-			}
-			return nextnode;
-		}
-
-		Node setNext(Node next) {
-			Node node = this;
-			while (node.next != null && node.next.mode!=NODE) {
-				node = node.next;
-			}
-			return(node.next = next);
-		}
+		return(node.next = next);
 	}
 }

@@ -9,39 +9,52 @@ package util;
  * - list of gated wire connections
  * - powered/unpowered
  */
-public abstract class DisjointSet {
+public abstract class DisjointSet{
 	
 	//pointer to parent
-    DisjointSet parent;
+    protected DisjointSet parent;
     
-    ObjectInfo oInfo;
-    //only exists if object is ancestor.
-    SetInfo sInfo = null;
+    // sinfo of ancestor holds info for entire set.
+    protected AbstractSetInfo sinfo;
 	
 	//combines two sets if they are different
-	public void union(DisjointSet other) {}
-	
-	//creates a second disjoint set
-	public void split() {}
-	
-	public void destroy() {}
+	// attaches that to this.
+    public void union(DisjointSet that) {
+		DisjointSet that_ancestor = that.getAncestor();
+		DisjointSet this_ancestor = this.getAncestor();
+		if(this_ancestor != that_ancestor ) {
+			that_ancestor.parent = this;
+		}
+		this.sinfo.add(that_ancestor.sinfo);
+	}
 	
 	//Ancestor is highest object in the heirachy.
-	public DisjointSet getAncestor() {return null;}
-	
-	//Object is the ancestor if parent == self.
-	public boolean isAncestor() {return false;}
-	
-	// Implementation depeneds on the behaviour of the set.
-	abstract class SetInfo{
-		public SetInfo(DisjointSet ancestor) {}
-		
-		public void add(SetInfo other) {}
-		
-		public void sub(SetInfo other) {}
+	public DisjointSet getAncestor() {
+		if(isAncestor()) return this;
+		return parent.getAncestor();
 		
 	}
-	abstract class ObjectInfo{
+	
+	public void makeAncestor() {
+		parent.makeAncestor(this);
+		parent = this;
+		//do set info calculations
+	}
+	private void makeAncestor(DisjointSet s) {
+		parent.makeAncestor(this);
+		parent = s;
+		//do set info calculations
+	}
+	
+	//Object is the ancestor if parent == self.
+	public boolean isAncestor() {return this == parent;}
+	
+	// Implementation depeneds on the behaviour of the set.
+	public abstract class AbstractSetInfo{
+		public void add(AbstractSetInfo that) {}
+		
+		public void sub(AbstractSetInfo that) {}
+		
 	}
 }
 

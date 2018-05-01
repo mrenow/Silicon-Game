@@ -41,6 +41,7 @@ public class MainProgram extends PApplet {
 		UnitTests.linkedListTest();
 		UnitTests.sparseQuadTreeTest();
 		test1.yell();
+		PointerSpeedTest.test();
 		
 		exit();
 

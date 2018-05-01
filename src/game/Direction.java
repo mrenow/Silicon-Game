@@ -4,13 +4,17 @@ public enum Direction {
 	NORTH(0),
 	EAST(1),
 	SOUTH(2),
-	WEST(3);
+	WEST(3),
+	IN(4);
 	
 	int val;
 	Direction(int val){
 		this.val = val;
 	}
 	Direction opposite() {
+		if(this == IN) {
+			return this;
+		}
 		return getDirection(val+2);
 	}
 	

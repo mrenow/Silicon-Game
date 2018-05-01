@@ -10,6 +10,7 @@ import events.KeyListener;
 import events.MovementListener;
 import events.ScrollListener;
 import processing.core.PVector;
+import util.SparseQuadTree;
 
 import java.util.ArrayList;
 
@@ -19,8 +20,12 @@ import java.util.ArrayList;
  * 
  */
 public class GameArea extends GridContainer implements KeyListener, ClickListener, MovementListener, ScrollListener {
+	//ded
+	//Tile[][] tiles;
 
-	Tile[][] tiles;
+	//1024*1024
+	//static SparseQuadTree<WireSegment> tiles = new SparseQuadTree<WireSegment>(10);  
+	
 	int dimx, dimy;
 
 	float scale = 1;

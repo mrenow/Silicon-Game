@@ -203,6 +203,11 @@ public class UnitTests {
 			DB_ASSERT(g, new LinkedList<Integer>(2, 4, 9, 5, 1, 2, 3, 1, 3));
 			DB_ASSERT(g.size(), 9);
 			
+			// + 2 + + 4 9 5 - - 1 3 -
+			h.remove(j);
+
+			DB_ASSERT(g, new LinkedList<Integer>(2, 4, 9, 5, 1, 3));
+			
 			
 			
 			
@@ -276,25 +281,20 @@ public class UnitTests {
 			DB_ASSERT(get.contains(c), true);
 			DB_ASSERT(get.contains(d), true);
 			DB_ASSERT(get.contains(e), true);
-			println(get);
-
 			get = tree.get(2, 5, 1, 4);
 			DB_ASSERT(get.contains(a), true);
 			DB_ASSERT(get.contains(b), true);
 			DB_ASSERT(get.contains(e), true);
-			println(get);
 			get = tree.get(2, 5, 2, 4);
 			DB_ASSERT(get.contains(a), true);
 			DB_ASSERT(get.contains(b), true);
 			DB_ASSERT(get.contains(e), true);
-			println(get);
 			get = tree.get(1, 7, 1, 7);
 			DB_ASSERT(get.contains(a), true);
 			DB_ASSERT(get.contains(b), true);
 			DB_ASSERT(get.contains(e), true);
 			DB_ASSERT(get.contains(d), true);
 			DB_ASSERT(get.contains(c), false);
-			println(get);
 		} catch (Exception ex) {
 			println("tree.elements: ",tree.elements);
 			println("get: ", get);
@@ -302,20 +302,19 @@ public class UnitTests {
 		}
 		
 		//deletion
-		//ToDo: implement reigion removal after elements have been removed.
+		//ToDo: implement region removal after elements have been removed.
 		try {
-			tree.delete(0,0);
+			tree.delete(0, 0);
 			DB_ASSERT(tree.get(0,0).contains(c),false);
-			
+
 			tree.deleteRange(0, 4, 0, 3);
-	
 			DB_ASSERT(tree.size(), 6);
-			println(tree.elements);
-	
+			
 			get = tree.get(0, 4, 0, 3);
 			DB_ASSERT(tree.get(0, 0).contains(c), false);
 			DB_ASSERT(tree.get(1, 3).contains(a), false);
 			DB_ASSERT(tree.get(2, 2).contains(a), false);
+			println(get);
 	
 			DB_ASSERT(get.contains(a), false);
 			DB_ASSERT(get.contains(b), false);
@@ -329,11 +328,24 @@ public class UnitTests {
 			DB_ASSERT(get.contains(c), false);
 			DB_ASSERT(get.contains(d), false);
 			DB_ASSERT(get.contains(e), true);
+			println("tree.elements: ", tree.elements);
+			tree.deleteRange(0, 8, 0, 8);
+			DB_ASSERT(tree.elements.empty(),true);
 		}catch(Exception ex) {
 			println("tree.elements: ", tree.elements);
 			println("get: ", get);
 			throw ex;
 		}
+		
+		
+		SparseQuadTree<Integer> tree2 = new SparseQuadTree<Integer>(1);
+		tree2.add( 5, 1, 1);
+		tree2.add( 4, 1, 0);
+		tree2.add( 3, 0, 0);
+		tree2.add( 2, 0, 1);
+		println(tree2.elements);
+				
+		
 
 		DB_U("ALL TESTS PASSED - YOU ARE AWESSOOOMMEE!!");
 	}
