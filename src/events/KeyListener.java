@@ -1,7 +1,7 @@
 package events;
 
 public interface KeyListener extends Listener{
-	void keyPressed();
-	void keyReleased();       
-	void keyTyped();
+	default void keyPressed() {};
+	default void keyReleased() {};       
+	default void keyTyped() {};
 }

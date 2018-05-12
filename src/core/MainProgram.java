@@ -9,12 +9,14 @@ import elements.*;
 import util.*;
 import async.*;
 import shapes.*;
+import sidequest.Mandelbrot;
 import tests.*;
 
 import static util.DB.*;
 import static core.MainProgram.*;
 import java.util.ArrayList;
 import processing.core.PApplet;
+import processing.core.PVector;
 import processing.event.MouseEvent;
 
 /**
@@ -42,13 +44,12 @@ public class MainProgram extends PApplet {
 		UnitTests.sparseQuadTreeTest();
 		test1.yell();
 		PointerSpeedTest.test();
-		
-		exit();
+		GameTests.testConnections();
 
 	}
 
 	public void settings() {
-		size(10, 10);
+		size(800, 800);
 	}
 
 	public void draw() {
@@ -57,6 +58,7 @@ public class MainProgram extends PApplet {
 		fill(0);
 		Events.check();
 		LEVEL.draw();
+
 	}
 
 	public void mousePressed() {
@@ -69,6 +71,9 @@ public class MainProgram extends PApplet {
 	}
 
 	public void mouseMoved() {
+		MovementEvents.check();
+	}
+	public void mouseDragged() {
 		MovementEvents.check();
 	}
 
@@ -91,10 +96,11 @@ public class MainProgram extends PApplet {
 	}
 }
 
-class TestScreen extends Screen {
+class TestScreen extends Screen implements MovementListener{
 	Arrow a;
-	GridContainer b;
-
+	MapNavigator b;
+	Text c;
+		
 	TestScreen() {
 		super();
 		/*
@@ -109,12 +115,14 @@ class TestScreen extends Screen {
 		 * b5.setFill(255,0,0); //ScrollPane e = new ScrollPane(0,0,600,300,b,2,this);
 		 */
 		//a = new Arrow(200, 200, 40, 30, 20, 200, 50, this);
-		//new GameArea(100,100,800,800,200,200,this);
+		b = new GameArea(0,0,800,800,6,this);
+		
 
 		//new BasicButton(0, 0, 100, 100, "hello", this);
 		//new ImageButton(100, 100, 100, 100, p3.loadImage("NavArrow.bmp"), this);
-		//Scheduler.call(new loop());
-
+		//b = new Mandelbrot(0, 0, getWidth(), getHeight(), this);
+		c = new Text(10,10,400,80,"Location:",this);
+		Scheduler.call(new loop());
 	}
 
 	protected void update() {
@@ -136,9 +144,13 @@ class TestScreen extends Screen {
 
 		@Override
 		public void run() {
-			a.addRotation(0.1f);
+			PVector pos = b.localToMapPos(new PVector(p3.mouseX, p3.mouseY));
+			c.setText(String.format("Location: [%.2f, %.2f]\nZoom: %.2f",pos.x,pos.y,b.getZoom()));
+			//c.setText("loc: ["+ Float.toString(pos.x) + Float.toString(pos.y) + "]");
+			
 		}
 
 	}
+
 
 }

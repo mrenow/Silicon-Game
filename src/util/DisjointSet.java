@@ -12,50 +12,46 @@ package util;
 public abstract class DisjointSet{
 	
 	//pointer to parent
-    protected DisjointSet parent;
+    protected DisjointSet parent = this;
     
-    // sinfo of ancestor holds info for entire set.
-    protected AbstractSetInfo sinfo;
-	
 	//combines two sets if they are different
 	// attaches that to this.
     public void union(DisjointSet that) {
-		DisjointSet that_ancestor = that.getAncestor();
-		DisjointSet this_ancestor = this.getAncestor();
-		if(this_ancestor != that_ancestor ) {
-			that_ancestor.parent = this;
-		}
-		this.sinfo.add(that_ancestor.sinfo);
+		that.parent = this;
+		this.addInfo(that);
 	}
 	
 	//Ancestor is highest object in the heirachy.
 	public DisjointSet getAncestor() {
 		if(isAncestor()) return this;
 		return parent.getAncestor();
-		
 	}
 	
 	public void makeAncestor() {
-		parent.makeAncestor(this);
 		parent = this;
-		//do set info calculations
+		if(!isAncestor()) parent.makeAncestor(this);
+		updateSetInfo();
 	}
-	private void makeAncestor(DisjointSet s) {
-		parent.makeAncestor(this);
-		parent = s;
-		//do set info calculations
+	protected void makeAncestor(DisjointSet s) {
+		this.clearInfo();
+		DisjointSet oldparent = parent;
+		this.parent = s;
+		if(this != oldparent) {
+			oldparent.makeAncestor(this);
+		}
+		updateSetInfo();
+	}
+	public boolean isSameSet(DisjointSet s) {
+		return s.getAncestor() == this.getAncestor();
 	}
 	
 	//Object is the ancestor if parent == self.
 	public boolean isAncestor() {return this == parent;}
-	
-	// Implementation depeneds on the behaviour of the set.
-	public abstract class AbstractSetInfo{
-		public void add(AbstractSetInfo that) {}
-		
-		public void sub(AbstractSetInfo that) {}
-		
-	}
+
+	public abstract void addInfo(DisjointSet that);
+	public abstract void subInfo(DisjointSet that);	
+	public abstract void updateSetInfo();
+	protected abstract void clearInfo();
 }
 
 

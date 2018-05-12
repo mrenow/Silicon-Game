@@ -157,14 +157,14 @@ public class LinkedList<T> implements Iterable<T> {
 	}
 
 	public boolean remove(T o) {
-		resetFocus();
-		while (focus.getNext().o != o) {
-			focusTo(index + 1);
-			if (isLast(focus)) {
-				return false;
-			}
+		Node<T> curr = start;
+		
+		while(curr.next.o != o) {
+			if(curr.next == end) return false;
+			curr = curr.next;
 		}
-		focus.setNext(focus.getNext().next); // parent = grandparent, skipping one element.
+		curr.next = curr.next.next;
+		curr.next.prev = curr;
 		return true;
 	}
 	// Searches for the start node of list
@@ -177,6 +177,7 @@ public class LinkedList<T> implements Iterable<T> {
 			curr = curr.next;
 		}
 		curr.next = list.end.next;
+		curr.next.prev = curr;
 		//separate list from parent for safety
 		list.end.next = null;
 		return true;
@@ -185,6 +186,7 @@ public class LinkedList<T> implements Iterable<T> {
 	// clear all contents of list.
 	public void clear() {
 		start.next = end;
+		end.prev = start;
 	}
 	public boolean empty() {
 		return isLast(start);
@@ -192,21 +194,21 @@ public class LinkedList<T> implements Iterable<T> {
 	//removes its existence from parent if exists.
 	public void delete() {
 		if(end.next != null) {
+			end.next.prev = start.prev;
 			start.assume(end.next);
-			end.next = start;
 		}
 	}
 	
 	// UNTESTED
 	// splits before element at specified index
-	public LinkedList<T>[] split(int i) {
+	/*public LinkedList<T>[] split(int i) {
 		if (i == 0)
 			return new LinkedList[] { new LinkedList(), new LinkedList(start.getNext()) };
 		resetFocus();
 		focusTo(i);
 		Node<T> start2 = focus.switchNext(null);
 		return new LinkedList[] { new LinkedList(start.getNext()), new LinkedList(start2) };
-	}
+	}*/
 
 	// Focus manupulation
 	void resetFocus() {
@@ -250,10 +252,17 @@ public class LinkedList<T> implements Iterable<T> {
 	@Override
 	public String toString() {
 		StringBuilder out = new StringBuilder(5);
+		// 
 		out.append("LinkedList:[ ");
 		
 		Node<T> curr = start;
+		int index = 0;
 		while(curr != null && curr != end.next) {
+			if(index > 100) {
+				out.append("...");
+				break;
+			}
+			
 			if(curr.mode == Node.START) {
 				if(curr == start) {
 					out.append("S, ");
@@ -274,9 +283,11 @@ public class LinkedList<T> implements Iterable<T> {
 				out.append(", ");
 			}
 			curr = curr.next;
+			index ++;
 		}
 		out.deleteCharAt(out.length() - 1);
 		out.append("]");
+		
 		return out.toString();
 	}
 
@@ -312,6 +323,22 @@ public class LinkedList<T> implements Iterable<T> {
 		}
 		return true;
 	}
+	boolean isFirst(Node<T> n) {
+		Node<T> prevnode = n.prev;
+		while (prevnode != start) {
+			if(prevnode.prev == null) {
+				println("broken ",this);
+				println(prevnode.o);
+				println(prevnode.mode);
+				
+			}
+			if(prevnode.mode == Node.NODE) {
+				return false;	
+			}
+			prevnode = prevnode.prev;
+		}
+		return true;
+	}
 	/*
 	 * public void destroy() { start.next = last = focus = null; index = -1; } //
 	 * creates a new linked list starting at a certain node. If a loop is //
@@ -324,6 +351,7 @@ public class LinkedList<T> implements Iterable<T> {
 	// MAYBE
 	// ACTUALLY I KINDA DOUBT IT THIS WAS A WASTE OF MY TIME
 	// I GUESS IF YOURE NOT WRITING ITS A OKAY
+	// WAIT NO ITS GREAT JOKES
 	private class LinkedIterator implements ListIterator<T> {
 		Node<T> curr;
 		int id;
@@ -334,7 +362,7 @@ public class LinkedList<T> implements Iterable<T> {
 		}
 
 		public boolean hasNext() {
-			return !isLast(curr);
+			return !(curr == end || isLast(curr));
 		}
 
 		public T next() {
@@ -345,13 +373,15 @@ public class LinkedList<T> implements Iterable<T> {
 		//adds 
 		public void add(T e) {
 			curr = (curr.setNext(new Node<T>(e, curr.getNext())));
-			index++;
+			id++;
 		}
 
 		@Override
-		//delete curr, become curr.next
+		//delete curr, become curr.prev
 		public void remove() {
-			curr.assume(curr.getNext());
+			Node<T> prev = curr.prev;
+			curr.assume(prev);
+			if (prev == start) start = curr;
 		}
 
 		@Override
@@ -364,16 +394,16 @@ public class LinkedList<T> implements Iterable<T> {
 			return id;
 		}
 
+		// EXTREMELY IMPORTANT NOTE: DOES NOT MOVE POINTER
 		@Override
 		public T previous() {
-			// TODO Auto-generated method stub
-			return null;
+			return (curr = curr.prevElement()).o;
 		}
 
 		// operations for previous are impossible.
 		@Override
 		public boolean hasPrevious() {
-			return false;
+			return !(curr == start || isFirst(curr));
 		}
 
 		@Override
@@ -385,7 +415,8 @@ public class LinkedList<T> implements Iterable<T> {
 
 }
 class Node<T>{
-	Node<T> next;
+	Node<T> next = null;
+	Node<T> prev = null;
 	public byte mode = 0;
 	public static final byte START = 1;
 	public static final byte END = 2;
@@ -396,28 +427,32 @@ class Node<T>{
 	Node(T o, Node<T> next) {
 		this.o = o;
 		this.setNext(next);
+		if(next != null) next.setPrev(this);
 	}
 
 	Node(byte mode, Node<T> next) {
 		this.o = null;
 		this.setNext(next);
+		if(next != null) next.setPrev(this);
 		this.mode = mode;
 	}
-
+	/*
 	Node<T> switchNext(Node<T> next) {
 		Node<T> old = this.getNext();
 		this.setNext(next);
 		return old;
 	}
-
+	 */
 	void set(T e) {
 		o = e;
 	}
 
 	// copy node into self
 	void assume(Node<T> n) {
+		if(n == null) return;
 		this.o = n.o;
 		this.next = n.next;
+		this.prev = n.prev;
 		this.mode = n.mode;
 
 	}
@@ -429,7 +464,13 @@ class Node<T>{
 		}
 		return nextnode;
 	}
-
+	Node<T> prevElement() {
+		Node<T> prevnode = getPrev();
+		while (prevnode.mode!=NODE) {
+			prevnode = prevnode.getPrev();
+		}
+		return prevnode;
+	}
 	Node<T> getNext() {
 		Node<T> nextnode = next;
 		while (nextnode.mode!=NODE) {
@@ -437,12 +478,30 @@ class Node<T>{
 		}
 		return nextnode;
 	}
+	Node<T> getPrev(){
+		Node<T> prevnode = prev;
+		while (prevnode.mode!=NODE) {
+			prevnode = prevnode.prev;
+		}
+		return prevnode;
+	}	
 
 	Node<T> setNext(Node<T> next) {
 		Node<T> node = this;
 		while (node.next != null && node.next.mode!=NODE) {
 			node = node.next;
 		}
+		if(next != null) next.prev = node;
 		return(node.next = next);
 	}
+	Node<T> setPrev(Node<T> prev){
+
+		Node<T> node = this;
+		while (node.prev != null && node.prev.mode!=NODE) {
+			node = node.prev;
+		}
+		if(prev != null) prev.next = node;
+		return(node.prev = prev);
+	}
+
 }

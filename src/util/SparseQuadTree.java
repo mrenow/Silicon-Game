@@ -17,7 +17,7 @@ import static processing.core.PApplet.println;
 @SuppressWarnings("unchecked")
 public class SparseQuadTree<T> {
 
-	int depth;
+	public int depth;
 	int length;
 
 	// 0 1
@@ -34,7 +34,7 @@ public class SparseQuadTree<T> {
 
 	public SparseQuadTree(int depth) {
 		this.depth = depth;
-		length = 1 << (depth);
+		length = 1 << depth;
 		elements = new LinkedList<T>();
 	}
 
@@ -61,7 +61,7 @@ public class SparseQuadTree<T> {
 	public boolean remove(T element, int x, int y) {
 		SparseQuadTree<T> t = getLowestSubtree(x, y);
 		if (t.depth == 0) {
-			DB_U(element, "removed from", t.elements, "in", this);
+			DB_A(element, "removed from", t.elements, "in", this);
 			boolean removed = t.elements.remove(element);
 			
 			if(t.elements.empty()) update(x,y);
@@ -96,6 +96,7 @@ public class SparseQuadTree<T> {
 	// gets pointer if exists or creates new one
 
 	public LinkedList<T> get(int x, int y) {
+		if(!inRange(x,y)) return new LinkedList<T>();
 		// make a copy of the pointers.
 		SparseQuadTree<T> t = getLowestSubtree(x, y);
 		if(t.depth == 0) {
@@ -105,6 +106,7 @@ public class SparseQuadTree<T> {
 	}
 
 	public LinkedList<T> get(int x1, int x2, int y1, int y2) {
+		
 		LinkedList<T> result = new LinkedList<T>();
 		
 		// match query range to bounds
@@ -140,6 +142,11 @@ public class SparseQuadTree<T> {
 
 	}
 
+	public SparseQuadTree<T> getAncestor(){
+		if(parent == null) return this;
+		return parent.getAncestor();
+	}
+
 	public String toString() {
 		return super.toString();
 	}
@@ -150,6 +157,7 @@ public class SparseQuadTree<T> {
 		// ensure query remains within bounds.
 		if (!DB_ASSERT(inRange(x, y), true)) {
 			DB_E(x,y,"Not in range of quadtree of length",length);
+			DB_E("depth:", depth);
 			throw new ArrayIndexOutOfBoundsException();
 		}
 		
@@ -175,6 +183,7 @@ public class SparseQuadTree<T> {
 		// ensure query remains within bounds.
 		if (!DB_ASSERT(inRange(x, y), true)) {
 			DB_E(x,y,"Not in range of quadtree of length",length);
+			DB_E("depth:", depth);
 			throw new ArrayIndexOutOfBoundsException();
 		}
 		int halflength = length / 2;
@@ -195,9 +204,8 @@ public class SparseQuadTree<T> {
 		}
 		// ensure query remains within bounds.
 		if (!DB_ASSERT(inRange(x, y), true)) {
-			println(x,y);
-			println(length);
-			println(depth);
+			DB_E(x,y,"Not in range of quadtree of length",length);
+			DB_E("depth:", depth);
 			throw new ArrayIndexOutOfBoundsException();
 		}
 		int halflength = length / 2;
@@ -209,11 +217,6 @@ public class SparseQuadTree<T> {
 		return children[id].getPointerTo(x & ~halflength, y & ~halflength);	
 	}
 	
-	public SparseQuadTree<T> getAncestor(){
-		if(parent == null) return this;
-		return parent.getAncestor();
-	}
-
 	private boolean inRange(int x, int y) {
 		return 0 <= x && x < length && 0 <= y && y < length;
 	}

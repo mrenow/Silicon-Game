@@ -1,9 +1,19 @@
 package events;
 
 import java.util.ArrayList;
+import java.awt.Component;
+import java.awt.event.KeyEvent;
+
 import static core.MainProgram.*;
 
-public class KeyEvents {
+public class KeyEvents extends KeyEvent{
+
+	//dont use, just a hack
+	public KeyEvents(Component arg0, int arg1, long arg2, int arg3, int arg4) {
+		super(arg0, arg1, arg2, arg3, arg4);
+		// TODO Auto-generated constructor stub
+	}
+
 	public static boolean[] key = new boolean[65536];
 	public static int code = 0;
 	public static ArrayList<KeyListener> list = new ArrayList<KeyListener>();
@@ -17,7 +27,6 @@ public class KeyEvents {
 		key[p3.keyCode] = true;
 		for (KeyListener e : new ArrayList<KeyListener>(KeyEvents.list)) {
 			e.keyPressed();
-
 		}
 	}
 

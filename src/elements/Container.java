@@ -54,6 +54,7 @@ public class Container extends Element {
 	}
 
 	// use is discouraged due to the very dynamic nature of the children array
+	// I haven't used it yet but I still get nightmares in my sleep. Don't Use It.
 	public void set_(int index, Element object) {
 
 		DB_A(this, "set", object, "at", index);

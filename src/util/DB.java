@@ -7,7 +7,7 @@ import static util.DB.*;
 import util.DB;
 
 public class DB {
-	static int debug = 3;
+	public static int debug = 3;
 
 	public static void DB_U(Object... message) {
 

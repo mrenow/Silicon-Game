@@ -201,6 +201,16 @@ public abstract class Element {
 		return true;
 	}
 
+	public float localMouseX() {
+		return p3.mouseX - getGlobalPos().x;
+		
+	}
+	public float localMouseY() {
+		return p3.mouseY - getGlobalPos().y;
+		
+	}
+
+
 	@Override
 	public String toString() {
 		String classname = this.getClass().toString();
