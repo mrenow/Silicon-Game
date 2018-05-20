@@ -26,7 +26,9 @@ import processing.event.MouseEvent;
 public class MainProgram extends PApplet {
 
 	public static MainProgram p3;
-
+	public static Scheduler globalscheduler = new Scheduler();
+	
+	
 	public static void main(String[] args) {
 		PApplet.main("core.MainProgram");
 	}
@@ -35,7 +37,7 @@ public class MainProgram extends PApplet {
 
 	public void setup() {
 		p3 = this;
-		Scheduler.start();
+		globalscheduler.start();
 		LEVEL = new TestScreen();
 
 		//Scheduler.testScheduler();
@@ -49,17 +51,29 @@ public class MainProgram extends PApplet {
 	}
 
 	public void settings() {
-		size(800, 800);
+		size(1200, 800);
 	}
 
 	public void draw() {
+		
 		background(200);
 		strokeWeight(2);
 		fill(0);
+		int eventtime = millis();
 		Events.check();
+		eventtime = millis() - eventtime;
+		
+		int drawtime = millis();
 		LEVEL.draw();
-
+		drawtime = millis()-drawtime;
+		
+		// draw debug overlay
+		
+		text(String.format("Draw: %dms",drawtime),10,10);
+		text(String.format("Event: %dms",eventtime),10,40);
+		
 	}
+	
 
 	public void mousePressed() {
 		FocusEvents.check();
@@ -100,7 +114,7 @@ class TestScreen extends Screen implements MovementListener{
 	Arrow a;
 	MapNavigator b;
 	Text c;
-		
+	ScrollPane osc;
 	TestScreen() {
 		super();
 		/*
@@ -115,14 +129,16 @@ class TestScreen extends Screen implements MovementListener{
 		 * b5.setFill(255,0,0); //ScrollPane e = new ScrollPane(0,0,600,300,b,2,this);
 		 */
 		//a = new Arrow(200, 200, 40, 30, 20, 200, 50, this);
-		b = new GameArea(0,0,800,800,6,this);
+		b = new GameArea(0,0,1200,600,6,this);
+		b.
 		
 
 		//new BasicButton(0, 0, 100, 100, "hello", this);
 		//new ImageButton(100, 100, 100, 100, p3.loadImage("NavArrow.bmp"), this);
 		//b = new Mandelbrot(0, 0, getWidth(), getHeight(), this);
 		c = new Text(10,10,400,80,"Location:",this);
-		Scheduler.call(new loop());
+		
+		globalscheduler.call(new loop());
 	}
 
 	protected void update() {

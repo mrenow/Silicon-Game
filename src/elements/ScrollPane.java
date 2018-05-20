@@ -15,10 +15,13 @@ import processing.core.PVector;
 public class ScrollPane extends Container implements ScrollListener, KeyListener {
 
 	// x,y,xy
-	int mode;
-	Element pane;
-	float maxscrollx;
-	float maxscrolly;
+	public static final byte SCROLL_X = 0;
+	public static final byte SCROLL_Y = 1;
+	public static final byte SCROLL_XY = 2;
+	
+	byte mode;
+	float panewidth;
+	float paneheight;
 	// may implement velocity scrolling later, currently is useless.
 	/*
 	 * float scrollvel; float SCROLLDRAG;
@@ -26,14 +29,11 @@ public class ScrollPane extends Container implements ScrollListener, KeyListener
 
 	PVector offset = new PVector(0, 0);
 
-	public ScrollPane(float x, float y, float w, float h, Element pane, int mode, Container p) {
+	public ScrollPane(float x, float y, float w, float h, byte mode, Container p) {
 		super(x, y, w, h, p);
 		this.mode = mode;
-		maxscrollx = pane.w - w;
-		maxscrolly = pane.h - h;
-		this.pane = pane;
-		add(this.pane);
-		this.pane.setPos(0, 0);
+		panewidth = w;
+		paneheight = h;
 		ScrollEvents.add(this);
 		KeyEvents.add(this);
 	}
@@ -58,17 +58,11 @@ public class ScrollPane extends Container implements ScrollListener, KeyListener
 			break;
 		}
 	}
-
 	public void movePane(float x, float y) {
 		offset.x += x;
 		offset.y += y;
-		DB_U(offset, maxscrollx, maxscrolly);
-		offset.x = min(offset.x, maxscrollx);
-		offset.y = min(offset.y, maxscrolly);
-		offset.x = max(offset.x, 0);
-		offset.y = max(offset.y, 0);
-
-		pane.setPos(-offset.x, -offset.y);
+		offset.x = constrain(offset.x, 0, panewidth - getWidth());
+		offset.y = constrain(offset.y, 0, paneheight - getHeight());
 	}
 
 	public void elementHovered() {
@@ -103,20 +97,25 @@ public class ScrollPane extends Container implements ScrollListener, KeyListener
 	}
 
 	protected void update() {
+		DB_U(offset);
+
+		g.pushMatrix();
+		g.translate(-offset.x, -offset.y);
 		super.update();
+		g.popMatrix();
+		
 		g.noStroke();
 		g.fill(0, 0, 0, 60);
-		DB_U(offset);
 		switch (mode) {
 		case 0:
-			g.rect(2, 2 + offset.y * (h - 4) / pane.h, 10, h * h / pane.h);
+			g.rect(2, 2 + offset.y * (h - 4) / paneheight, 10, h * h / paneheight);
 			break;
 		case 1:
-			g.rect(2 + offset.x * (w - 4) / pane.h, 2, w * w / pane.w, 10);
+			g.rect(2 + offset.x * (w - 4) / panewidth, 2, w * w / panewidth, 10);
 			break;
 		case 2:
-			g.rect(2, 2 + offset.y * (h - 4) / pane.h, 10, (h - 4) * (h - 4) / pane.h);
-			g.rect(2 + offset.x * (w - 4) / pane.h, 2, (w - 4) * (w - 4) / pane.w, 10);
+			g.rect(2, 2 + offset.y * (h - 4) / paneheight, 10, (h - 4) * (h - 4) / paneheight);
+			g.rect(2 + offset.x * (w - 4) / panewidth, 2, (w - 4) * (w - 4) / panewidth, 10);
 			break;
 		}
 	}

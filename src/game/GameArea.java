@@ -21,34 +21,49 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.ListIterator;
 
+import org.omg.PortableInterceptor.ACTIVE;
+
+import async.ActiveAsyncEvent;
+import async.AsyncEvent;
+import async.Scheduler;
+
 /* Contains the building grid
  * An x,y scrollable and zoomable pane which will have a set size. 
  * Does not reside in a scroll pane due to the need for drawing optimizations.
  * 
  */
 public class GameArea extends MapNavigator implements KeyListener, ClickListener, MovementListener, ScrollListener {
-
+	
+	public static Scheduler tickscheduler = new Scheduler();
+	
 	final static float MAX_SCALE = 500;
 	final static float MIN_SCALE = 1;
 
 	final static int VK_SILICON = KeyEvents.VK_SHIFT;
-	final static int VK_METAL = KeyEvents.VK_CONTROL;
-	final static int VK_VIA = KeyEvents.VK_SPACE;
+	final static int VK_METAL   = KeyEvents.VK_CONTROL;
+	final static int VK_VIA     = KeyEvents.VK_SPACE;
 	
-	final static int VK_DRAG = KeyEvents.VK_CONTROL;
+	final static int VK_DRAG   = KeyEvents.VK_CONTROL;
 	final static int VK_SELECT = KeyEvents.VK_S;
 	final static int VK_DELETE = KeyEvents.VK_D;
 
 	// ctrl + commands
-	final static int VK_CTRL_UNDO = KeyEvents.VK_Z;
-	final static int VK_CTRL_REDO = KeyEvents.VK_Y;
-	final static int VK_CTRL_COPY = KeyEvents.VK_C;
+	final static int VK_CTRL_UNDO  = KeyEvents.VK_Z;
+	final static int VK_CTRL_REDO  = KeyEvents.VK_Y;
+	final static int VK_CTRL_COPY  = KeyEvents.VK_C;
 	final static int VK_CTRL_PASTE = KeyEvents.VK_V;
-
-	public SparseQuadTree<WireSegment> tiles;
+	
+	final static byte MAKE_SILICON = 0;
+	final static byte MAKE_METAL   = 1;
+	final static byte MAKE_VIA     = 2;
+	final static byte MAKE_POWER   = 3;
+	
+	byte makemode =  MAKE_SILICON;
 
 	int dimx, dimy;
 
+	public SparseQuadTree<WireSegment> tiles;
+	public LinkedList<Power> sources;
 	ArrayList<Conductor> pendingupdate = new ArrayList<Conductor>();
 
 	public GameArea(float x, float y, float w, float h, int size, Container p) {
@@ -78,6 +93,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 
 	protected void update() {
 		super.update();
+		g.pushMatrix();
 		transformView();
 		// Draw bounding box
 		g.noFill();
@@ -90,87 +106,162 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		LinkedList<WireSegment> objects = new LinkedList<WireSegment>(tiles.get(floor(offset.x),
 				ceil(offset.x + getWidth() / zoom), floor(offset.y), ceil(offset.y + getHeight() / zoom)));
 		
-		WireSegment w = null;
-		
+		WireSegment w = null;		
+		Gate g1 = null;
 		// Draw N silicon
-		ListIterator<WireSegment> iter = objects.iterator();
+		ListIterator<WireSegment> witer = objects.iterator();
+		ListIterator<Gate> giter;
 		LinkedList<WireSegment> active = new LinkedList<WireSegment>();
+		LinkedList<Gate> gates = new LinkedList<Gate>();
 		g.fill(50, 0, 0);
-		while (iter.hasNext()) {
-			w = iter.next();
-			if (w.mode == WireSegment.N_TYPE) {
+		while (witer.hasNext()) {
+			w = witer.next();
+			if (w.mode == WireSegment.N_TYPE || w.mode == WireSegment.N_GATE) {
+				if(w.mode == WireSegment.N_GATE) {
+					gates.add((Gate)w);
+				}
 				if(w.isActive()) {
 					active.add(w);
 				} else {
 					g.rect(w.x, w.y, 1, 1);
 				}
-				iter.remove();
+				witer.remove();
 			}
 		}
+
 		
-		g.fill(150,0,0);
-		for(WireSegment w1 : active) {
+		g.fill(140,0,0);
+		for (WireSegment w1: active) {
 			g.rect(w1.x, w1.y, 1, 1);
 		}
 		active.clear();
 		
+		//active gates
+		giter = gates.iterator();
+		g.fill(220,220,0);
+		while(giter.hasNext()) {
+			g1 = giter.next();
+			if(g1.powered()) {
+				g.rect(g1.x + 0.1f,g1.y+0.1f,0.8f,0.8f);
+				giter.remove();
+			}
+		}
+		// inactive gates
+		g.fill(100,100,0);
+		for (Gate g2: gates) {
+			g.rect(g2.x + 0.1f,g2.y+0.1f,0.8f,0.8f);
+		}
+		gates.clear();
+		
+		
+		
+		
+		
 		// Draw P silicon
-		iter = objects.iterator();
+		witer = objects.iterator();
 		g.fill(100, 100, 0);
-		while (iter.hasNext()) {
-			w = iter.next();
-			if (w.mode == WireSegment.P_TYPE) {
+		while (witer.hasNext()) {
+			w = witer.next();
+			if (w.mode == WireSegment.P_TYPE || w.mode == WireSegment.P_GATE) {
+				if(w.mode == WireSegment.P_GATE) {
+					gates.add((Gate)w);
+				}
 				if(w.isActive()) {
 					active.add(w);
 				} else {
 					g.rect(w.x, w.y, 1, 1);
 				}
-				iter.remove();
+				witer.remove();
 			}
 		}
 		
 		g.fill(220,220,0);
-		for(WireSegment w1 : active) {
+		for (WireSegment w1: active) {
 			g.rect(w1.x, w1.y, 1, 1);
 		}
 		active.clear();
 		
+		
+		
+		//active gates
+		giter = gates.iterator();
+		g.fill(140,0,0);
+		while(giter.hasNext()) {
+			g1 = giter.next();
+			if(g1.powered()) {
+				g.rect(g1.x + 0.1f,g1.y+0.1f,0.8f,0.8f);
+				giter.remove();
+			}
+		}
+		// inactive gates
+		g.fill(50,0,0);
+		for (Gate g2: gates) {
+			g.rect(g2.x + 0.1f,g2.y+0.1f,0.8f,0.8f);
+		}
+		gates.clear();
+		
 		// Draw metal
-		iter = objects.iterator();
+		witer = objects.iterator();
 		g.fill(100, 100, 100, 140);
-		while (iter.hasNext()) {
-			w = iter.next();
+		while (witer.hasNext()) {
+			w = witer.next();
 			if (w.mode == WireSegment.METAL) {
 				if(w.isActive()) {
 					active.add(w);
 				} else {
 					g.rect(w.x, w.y, 1, 1);
 				}
-				iter.remove();
+				witer.remove();
 			}
 		}
 		
+		// Active Metal
+		g.fill(200,200,200,140);
+		for(WireSegment w1 : active) {
+			g.rect(w1.x, w1.y, 1, 1);
+		}
+		active.clear();
+		
 
-		g.fill(200,200,140);
+		
+		// Draw Power
+		g.stroke(200);
+		g.strokeWeight(0.01f);
+		witer = objects.iterator();
+		g.fill(100, 100, 100, 140);
+		while (witer.hasNext()) {
+			w = witer.next();
+			if(w.mode == WireSegment.POWER) {
+				if(w.isActive()) {
+					active.add(w);
+				} else {
+					g.rect(w.x, w.y, 1, 1);
+				}
+				witer.remove();
+				
+			}
+			
+		}
+		// Active Power
+		g.fill(200,200,200,140);
 		for(WireSegment w1 : active) {
 			g.rect(w1.x, w1.y, 1, 1);
 		}
 		active.clear();
 		
 		//draw vias
-		iter = objects.iterator();
+		witer = objects.iterator();
 		g.noFill();
-		g.stroke(100);
-		g.strokeWeight(0.01f);
-		while (iter.hasNext()) {
-			w = iter.next();
+		while (witer.hasNext()) {
+			w = witer.next();
 			if (w.mode == WireSegment.VIA) {
 				g.ellipse(w.x + 0.5f, w.y + 0.5f, 0.7f, 0.7f);
-				iter.remove();
+				witer.remove();
 			}
 		}
 		
 		// debug overlay indication direction of WireSegment chain
+		// debug overlay for grid
 		if(debug == 3) {
 			g.stroke(0);
 			for(WireSegment w1 : tiles.elements) {
@@ -184,10 +275,58 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				g.line(w1.getParent().x+0.5f,w1.getParent().y+0.5f,w1.getParent().x + v.x +0.5f, w1.getParent().y + v.y+0.5f);
 				
 			}
+			g.fill(255,0,0);
+			for (WireSegment w1 : WireSegment.potentialdisconnects) {
+				g.ellipse(w1.x+0.5f, w1.y+0.5f, 0.3f,0.3f);
+				
+			}
+			
+			// draw grid markers
+			g.popMatrix();
+			g.strokeWeight(1);
+			g.fill(0);
+			g.rectMode(CENTER);
+			g.textAlign(CENTER,CENTER);
+			PVector topleft = localToMapPos(0,0);
+			PVector bottomright = localToMapPos(getWidth(),getHeight());
+			int linelength = 5;
+			float x,y;
+			for(int i = ceil(topleft.x); i< bottomright.x; i++) {
+				x = mapToLocalX(i);
+				
+				g.line(x,0,x,linelength);
+				if(i>=0) {
+					g.text(Integer.toString(i),mapToLocalX(i + 0.5f),linelength);
+				}
+			}
+			for(int i = ceil(topleft.y); i< bottomright.y; i++) {
+				y = mapToLocalY (i);
+				g.line(0,y,linelength, y);
+				if(i >= 0) {
+					g.text(Integer.toString(i),linelength,mapToLocalY(i + 0.5f));
+				}
+				
+				
+			}
+			
+			
 		}
 	}
 
 	public void keyPressed() {
+		if(KeyEvents.key[KeyEvents.VK_1]) {
+			makemode = MAKE_SILICON;
+		}else if (KeyEvents.key[KeyEvents.VK_2]){
+			makemode = MAKE_METAL;	
+		}else if (KeyEvents.key[KeyEvents.VK_3]){
+			makemode = MAKE_VIA;
+		}else if (KeyEvents.key[KeyEvents.VK_4]){
+			makemode = MAKE_POWER;
+		}
+		
+		if(KeyEvents.key[KeyEvents.VK_ENTER]) {
+			rectifyMap();
+		}
 
 	}
 
@@ -242,40 +381,45 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	}
 
 	private void drawLine(float x1, float y1, float x2, float y2) {
-		PVector pos1 = localToMapPos(x1, y1);
-		PVector pos2 = localToMapPos(x2, y2);
-		activateSquare(floor(pos1.x), floor(pos1.y));
-		activateSquare(floor(pos2.x), floor(pos2.y));
+		globalscheduler.call(new RunDrawLine(x1,y1,x2,y2));
 
-		if (abs(pos2.x - pos1.x) > abs(pos2.y - pos1.y)) {
-			if (pos2.x < pos1.x) {
-				PVector c = pos2;
-				pos2 = pos1;
-				pos1 = c;
-			}
-			for (int x = floor(pos1.x)+1; x < floor(pos2.x)+1; x++) {
-				float yf = (pos2.y - pos1.y) / (pos2.x - pos1.x) * (x - pos1.x) + pos1.y;
-				println("nyah", pos1,pos2,yf,x);
-				int y = floor(yf);
-				activateSquare(x, y);
-				activateSquare(x-1, y);
+	}
+	//connects squares in a manner similar to the update connections function
+	private void rectifyMap() {
+		ListIterator<WireSegment> disconnectiter = WireSegment.potentialdisconnects.iterator();
+		WireSegment w1, w2;
+		
+		while(disconnectiter.hasNext()) {
+
+			w1 = disconnectiter.next();
+			ListIterator<WireSegment> iter = new LinkedList<WireSegment>(w1.getAdjacent()).iterator();
+			//if the wire has a potential adjacent connection it is not directly connected to.
+			boolean isvalid = false;
+			while(iter.hasNext()) {
+				w2 = iter.next();
+			
+				if(w1.canConnect(w2)) {
+					if( !w1.isSameSet(w2)) { 
+						DB_U("rectified", w2,w1);
+						w1.makeAncestor(w2);
+						WireSegment.potentialdisconnects.remove(w2);
+						WireSegment.potentialdisconnects.remove(w1);
+					}
+					if(w1.getParent() != w2 && w2.getParent() != w1) {
+						isvalid = true;
+						
+					}
+				}
 				
-			}
-		} else {
-			if (pos2.y < pos1.y) {
-				PVector c = pos2;
-				pos2 = pos1;
-				pos1 = c;
-			}
-			for (int y = floor(pos1.y)+1; y < floor(pos2.y)+1; y++) {
-				float xf = (pos2.x - pos1.x) / (pos2.y - pos1.y) * (y - pos1.y) + pos1.x;
-				println("nyeh", pos1,pos2,xf,y);
-				int x = floor(xf);
-				activateSquare(x, y);
-				activateSquare(x, y-1);
+				//disconnectiter.remove();
+				
+			}	
+			if(!isvalid) {
+				WireSegment.potentialdisconnects.remove(w1);
 			}
 		}
-
+		requestUpdate();
+		
 	}
 
 	private void activateSquare(PVector v) {
@@ -284,28 +428,63 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 
 	private void activateSquare(int x, int y) {
 		if (x < 0 || dimx <= x || y < 0 || dimy <= y) return;
-	
+		
+		//globalscheduler.call(new RunActivateSquare(x,y));
+
 		if (p3.mouseButton == RIGHT) {
 			delete(x,y);
 			return;
 		}
-		if (KeyEvents.key[KeyEvents.VK_SPACE]) {
-			makeVia(x,y);
-			return;
+		
+		
+		if(makemode == MAKE_POWER) {
+			for(WireSegment w : tiles.get(x, y)) {
+				if(w instanceof Power) {
+					((Power)w).toggle();
+				}
+			}
 		}
-
-		if (KeyEvents.key[VK_METAL]) {
-			makeMetal(x,y);
-		} else  {
-			makeSilicon(KeyEvents.key[VK_SILICON] ? WireSegment.N_TYPE : WireSegment.P_TYPE, x, y);
+		
+		if(!running) {
+			switch(makemode) {
+				case MAKE_VIA: 
+					makeVia(x,y);
+					break;
+				case MAKE_METAL:
+					makeMetal(x,y);
+					break;
+				case MAKE_POWER:
+					// If already existing power, toggle it.
+					
+					makePower(x,y);
+					
+					break;
+				case MAKE_SILICON:
+					makeSilicon(KeyEvents.key[VK_SILICON] ? WireSegment.N_TYPE : WireSegment.P_TYPE, x, y);
+					break;
+			}
 		}
+		requestUpdate();
+		
 	}
 	private void makeSilicon(byte mode , int x, int y) {
+		DB_ASSERT(mode == WireSegment.N_TYPE || mode == WireSegment.P_TYPE,true);
 		LinkedList<WireSegment> current = tiles.get(x, y);
 		// If silicon already exists do nothing
 		for (WireSegment w : current) {
-			if (w.mode == WireSegment.P_TYPE || w.mode == WireSegment.N_TYPE) return;
+			if ((w.mode == WireSegment.N_TYPE)||(w.mode == WireSegment.P_TYPE)) {
+				if(w.mode != mode) { 
+					tiles.remove(w, x, y);
+					w.delete();
+					println(tiles.get(x,y));
+					makeGate((byte)(3+w.mode), x, y);
+				}
+				return;
+			} else if (w.mode == WireSegment.N_GATE || w.mode == WireSegment.P_GATE){
+				return;
+			}
 		}
+		
 		DB_U("Make", x, y);
 		
 		// If keyPressed change to P silicon
@@ -325,27 +504,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		LinkedList<WireSegment> current = tiles.get(x, y);
 		// If metal already exists do nothing
 		for (WireSegment w : current) {
-			if (w.mode == WireSegment.METAL) return;	
+			if (w.mode == WireSegment.METAL || w.mode == WireSegment.POWER) return;	
 		}
 		DB_U("Make", x, y);
 		
 		WireSegment w;
 		tiles.add(w = new WireSegment(WireSegment.METAL, x, y), x, y);
 		w.updateConnections();
-	}
-	private void delete(int x, int y) {
-		LinkedList<WireSegment> current = tiles.get(x, y);
-		for (WireSegment w : current) {
-			if((KeyEvents.key[VK_VIA] == (w.mode == WireSegment.VIA))
-	       	&&(KeyEvents.key[VK_METAL] == (w.mode == WireSegment.METAL))){
-				tiles.remove(w, x, y);	
-			}	
-		}
-	}
-	private void updateAdjacent(WireSegment w) {
-		LinkedList<WireSegment> adj = w.getAdjacent();
-
-		//to Do: update
 	}
 	private void makeVia(int x, int y) {
 		LinkedList<WireSegment> current = tiles.get(x, y);
@@ -360,8 +525,43 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		w.updateConnections();
 	}
 	
+	//assumes area is already cleared
+	private void makeGate(byte mode, int x, int y) {	
+		DB_U("Make Gate:",x,y);
+		Gate g;
+		tiles.add(g = new Gate(mode,x,y),x, y);
+		g.updateConnections();
+	}
+	private void makePower(int x, int y) {
+		LinkedList<WireSegment> current = tiles.get(x, y);
+		// If metal already exists do nothing
+		for (WireSegment w : current) {
+			if (w.mode == WireSegment.METAL || w.mode == WireSegment.POWER) return;	
+		}
+		DB_U("Make Power", x, y);
+		
+		Power p;
+		tiles.add(p = new Power(x, y), x, y);
+		p.updateConnections();
+		sources.add(p);
+	}
 	
 	
+	
+	
+
+	private void delete(int x, int y) {
+		LinkedList<WireSegment> current = tiles.get(x, y);
+		for (WireSegment w : current) {
+			if(((makemode == MAKE_VIA  ) == (w.mode == WireSegment.VIA  ))
+	         &&((makemode == MAKE_METAL) == (w.mode == WireSegment.METAL))
+	         &&((makemode == MAKE_POWER) == (w.mode == WireSegment.POWER))){
+				if(w.mode == WireSegment.POWER) sources.remove((Power)w); 
+				tiles.remove(w, x, y);
+				w.delete();
+			}	
+		}
+	}
 
 	// index 0 contains input gates and index 1 contains output gates
 	// 
@@ -380,64 +580,139 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			}
 		}
 		return out;
+	}	
+	
+	class RunActivateSquare extends AsyncEvent {
+		
+		int x; 
+		int y;
+		protected RunActivateSquare(int x, int y){
+			this.x = x;
+			this.y = y;
+			
+		}
+		@Override
+		protected void run() {
+			activateSquare(x,y);
+		}
+		
 	}
+	
+	class RunDrawLine extends AsyncEvent{
+		float x1,y1,x2,y2;
+		
+		RunDrawLine(float x1,float y1,float x2,float y2){
+			this.x1 = x1;
+			this.y1 = y1;
+			this.x2 = x2;
+			this.y2 = y2;
+		}
+		@Override
+		protected void run() {
+			PVector pos1 = localToMapPos(x1, y1);
+			PVector pos2 = localToMapPos(x2, y2);
+			activateSquare(floor(pos1.x), floor(pos1.y));
+			activateSquare(floor(pos2.x), floor(pos2.y));
 
+			if (abs(pos2.x - pos1.x) > abs(pos2.y - pos1.y)) {
+				if (pos2.x < pos1.x) {
+					PVector c = pos2;
+					pos2 = pos1;
+					pos1 = c;
+				}
+				for (int x = floor(pos1.x)+1; x < floor(pos2.x)+1; x++) {
+					float yf = (pos2.y - pos1.y) / (pos2.x - pos1.x) * (x - pos1.x) + pos1.y;
+					println("nyah", pos1,pos2,yf,x);
+					int y = floor(yf);
+					activateSquare(x, y);
+					activateSquare(x-1, y);
+					
+				}
+			} else {
+				if (pos2.y < pos1.y) {
+					PVector c = pos2;
+					pos2 = pos1;
+					pos1 = c;
+				}
+				for (int y = floor(pos1.y)+1; y < floor(pos2.y)+1; y++) {
+					float xf = (pos2.x - pos1.x) / (pos2.y - pos1.y) * (y - pos1.y) + pos1.x;
+					println("nyeh", pos1,pos2,xf,y);
+					int x = floor(xf);
+					activateSquare(x, y);
+					activateSquare(x, y-1);
+				}
+			}	
+		}
+	}
+	
+	
+	
 	/*
-	 * // attempt to connect adjacent vertical squares // passing y = 1 at x = 5.4
-	 * causes a connection at x = 5, y = 0 // usage:
-	 * connectHorizontal(floor(mousex),floor(mousey-1)); void connectVertcial(int x,
-	 * int y) { Tile t = tiles.get(x, y); if (t.hasWire() && t.hasSilicon()) {
-	 * connect(t.getSilicon(), t.getWire()); } }
-	 * 
-	 * // attempt to connect adjacent horizontal squares: on line x at box y. //
-	 * passing x = 1, at y = 4.1 causes a connection between x = 0, y = 4 and x = 1,
-	 * // y = 4 // usage: connectHorizontal(floor(mousex-1),floor(mousey)); void
-	 * connectHorizontal(int x, int y, boolean metal) { Tile t1 = tiles[y][x]; Tile
-	 * t2 = tiles[y][x - 1]; if (metal) { if (t1.hasWire() && t2.hasWire()) ; } else
-	 * { if (t1.hasSilicon() && t2.hasSilicon()) ; } }
-	 * 
-	 * // forms connections between all components on depth void connectDepth(int x,
-	 * int y) { connect(tiles[y][x].getSilicon(), tiles[y][x].getWire()); }
-	 * 
-	 * void connect(Conductor a, Conductor b) { /* if (a != null && b != null) {
-	 * a.connections.add(b); b.connections.add(a); }
-	 */
-	// }
-
-	void conductorTest() {
-		int size = 30;
-		Integer[][] grid = new Integer[30][30];
-		boolean peak;
-		ArrayList<PVector> queuedupdates = new ArrayList<PVector>();
-
-	}
-	
-	
-	
-	
+	 * LOGIC ENGINE
+ 	 */
 	
 	//to be updated in this tick
 	private LinkedList<WireSegment> currentwireupdates;
 	//to be updated next tick
-	private LinkedList<Gate> nextgateupdates;
+	private LinkedList<WireSegment> nextwireupdates;
+	
+	
+	// Thread states
+	public boolean running = false;
+	public boolean stoppable = false;
+	
+	// make new process
+	public void run() {
+		rectifyMap();
+		if(!running) {
+			tickscheduler.call(new RepeatIterate());
+		}
+	}
+	public void stop() {
+		if(running) {
+			// Event will detect this and remove itself on next iteration.
+			stoppable = true;
+		}
+		
+	}
+	// only step if paused 
+	public void step() {
+		if(!running) {
+			// Iterate once only
+			tickscheduler.call(new RunIterate());
+		}
+	}
+	
+	public float getSpeed() {
+		return 1000f/tickscheduler.getPeriod();	
+	}
+	
+	public void setSpeed(float tickspersecond) {
+		tickspersecond = max(1,tickspersecond);
+		tickscheduler.setPeriod(1000f/tickspersecond);
+	}
+	
+	public void reset() {
+		// Guarantees that all wires set to off in next iteration
+		for(Power p : sources) {
+			p.setActive(WireSegment.WIRE_OFF);
+		}
+		step();
+		
+		// Destroy thread
+		stop();
+	}
+	
 	
 	
 	// runs signal spreading logic
-	void iterate() {
-		/*while (pendingupdate.size() != 0) {
-			ArrayList<Conductor> nextupdatelist = new ArrayList<Conductor>();
-			for (Conductor c : pendingupdate) {
-				for (Conductor d : c.spread()) {
-					// queue for update.
-					if (nextupdatelist.indexOf(d) != -1)
-						nextupdatelist.add(d);
-				}
-			}
-			pendingupdate = nextupdatelist;
-		}*/
-		for (Gate g : nextgateupdates) {
-			currentwireupdates.add(new LinkedList<WireSegment>(g.inputs));
+	private void iterate() {
+		
+		for (WireSegment w : nextwireupdates) {
+			w.updatePowered();
+			currentwireupdates.add(w);
 		}
+		nextwireupdates.clear();
 		
 		while(!currentwireupdates.empty()) {
 			// Makes new iterator and continuously updates through queued updates
@@ -445,58 +720,40 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			currentwireupdates.clear();
 			while(iter.hasNext()) {
 				//adds update requests to both queues.
-				updateSegment(iter.next());
+				iter.next().updateActive(currentwireupdates, nextwireupdates);;
 			}
 		}
-		
-	}
-
-	/*
-	 *  
-	 *  RUN GAME
-	 * 
-	 * 
-	 */
-	
-	
-	
-	private void updateSegment(WireSegment current) {
-		// if segment is gate, do not permit flow based on gate type
-		if(current instanceof Gate && !((Gate)current).isPermissive()) return;
-		
-		//search for lowest neighbor
-		int min = Integer.MAX_VALUE;
-		for(WireSegment adj : current.connections) {
-			if(adj.active.val < min) {
-				min = adj.active.val;	
-			}
-		}
-		
-		//update wire state and queue updates for appropriate neighbors.
-		if(current.active.val < min) {
-			current.active.val = WireSegment.WIRE_OFF;
-			for(WireSegment output : current.connections) {
-				if(output.active.val != WireSegment.WIRE_OFF) currentwireupdates.add(output);
-			}
-			
-		} else {
-			current.active.val = min + 1;
-			for(WireSegment output : current.connections) {
-				if(output.active.val == WireSegment.WIRE_OFF) currentwireupdates.add(output);
-			}
-		}
-		for( Gate input : current.gates) {
-			nextgateupdates.add(input);	
-		}
+		requestUpdate();
 	}
 	
 
-	
 
+	private class RepeatIterate extends ActiveAsyncEvent {
+		@Override
+		protected void run() {
+			iterate();	
+		}
+		protected void start() {
+			running = true;
+		}
+		protected void stop() {
+			// Stop may be requested once thread runs again.
+			stoppable = false;
+			running = false;
+		}
+		@Override
+		protected boolean condition() {
+			return exists && stoppable;
+		}
+	}
 	
-	
-	
-
+	// Iterates once
+	private class RunIterate extends AsyncEvent {
+		@Override
+		protected void run() {
+			iterate();
+		}
+	}
 }
 
 // only one silicon can be placed per tile

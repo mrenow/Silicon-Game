@@ -8,17 +8,12 @@ public class test1 {
 	static int value = 10;
 
 	public static void yell() {
-		Integer a = 1;
-		Integer b = 2;
-
-		b = a;
-
-		println(a,b);
-		a = 3;
+		float a = -EPSILON;
+		float b = EPSILON;
 		
-		
-		println(a,b);
-		
+		println(a>b,a>=b, a<b,a<=b);
+		println(a>0,a>=0, a<0, a<=0);
+		println(b>0,b>=0, b<0, b<=0);
 		
 		
 		

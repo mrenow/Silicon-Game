@@ -16,10 +16,17 @@ public abstract class DisjointSet{
     
 	//combines two sets if they are different
 	// attaches that to this.
-    public void union(DisjointSet that) {
+    public void add(DisjointSet that) {
 		that.parent = this;
 		this.addInfo(that);
 	}
+    public boolean remove(DisjointSet that) {
+    	if(that.parent != this)	return false;
+    	that.parent = that;
+    	this.subInfo(that);
+    	return true;
+    }
+    
 	
 	//Ancestor is highest object in the heirachy.
 	public DisjointSet getAncestor() {
@@ -28,14 +35,14 @@ public abstract class DisjointSet{
 	}
 	
 	public void makeAncestor() {
-		parent = this;
+		//s.union(this);
 		if(!isAncestor()) parent.makeAncestor(this);
 		updateSetInfo();
 	}
-	protected void makeAncestor(DisjointSet s) {
+	public void makeAncestor(DisjointSet s) {
 		this.clearInfo();
 		DisjointSet oldparent = parent;
-		this.parent = s;
+		s.add(this);
 		if(this != oldparent) {
 			oldparent.makeAncestor(this);
 		}

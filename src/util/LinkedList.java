@@ -6,6 +6,8 @@ import static util.DB.*;
 import java.util.Iterator;
 import java.util.ListIterator;
 
+import game.Gate;
+
 /*
  * An empty linked list contains one node, the start node. The payload is null.
  * Also, welcome to Pointer Hell. Is it your first time here?
@@ -74,6 +76,19 @@ public class LinkedList<T> implements Iterable<T> {
 	public boolean contains(T e) {
 		return indexOf(e) != -1;
 	}
+	//checks for start node
+	public boolean contains(LinkedList<Gate> gates) {
+		Node<T> curr = start;
+		while(curr != end) {
+			if(curr == start) {
+				return true;
+			}
+			curr = curr.next;
+		}
+		
+		return false;
+	}
+
 
 	public void addFirst(T e) {
 		start.next = new Node<T>(e, start.next);
@@ -180,6 +195,28 @@ public class LinkedList<T> implements Iterable<T> {
 		curr.next.prev = curr;
 		//separate list from parent for safety
 		list.end.next = null;
+		return true;
+	}
+	public boolean removeAll(T o) {
+		Node<T> curr = start;
+		boolean exists = false;
+		while(curr.next != end) {
+			if(curr.next.o == o) {
+				
+				curr.next = curr.next.next;
+				curr.next.prev = curr;
+				
+				exists = true;
+			}else {
+				curr = curr.next;
+			}
+		}
+		return exists;
+		
+	}
+	public boolean removeLast() {
+		if(empty()) return false;
+		end.setPrev(end.prevElement().prev);
 		return true;
 	}
 	
@@ -379,8 +416,8 @@ public class LinkedList<T> implements Iterable<T> {
 		@Override
 		//delete curr, become curr.prev
 		public void remove() {
-			Node<T> prev = curr.prev;
-			curr.assume(prev);
+			Node<T> prev = curr;
+			curr.assume(curr.prev);
 			if (prev == start) start = curr;
 		}
 
@@ -410,7 +447,53 @@ public class LinkedList<T> implements Iterable<T> {
 		public int previousIndex() {
 			return id - 1;
 		}
-	};
+		public String toString() {
+			StringBuilder out = new StringBuilder(5);
+			// 
+			out.append("LinkedList:[ ");
+			
+			Node<T> curr = start;
+			int index = 0;
+			while(curr != null && curr != end.next) {
+				if(index > 100) {
+					out.append("...");
+					break;
+				}
+				if(this.curr == curr) {
+					out.append("^");
+					
+				}
+				if(curr.mode == Node.START) {
+					if(curr == start) {
+						out.append("S, ");
+					}
+					else {
+						out.append("+, ");
+					}
+				}else if(curr.mode == Node.END) {
+					if(curr == end) {
+						out.append("E, ");
+					}else {
+						out.append("-, ");
+						
+					}
+					
+				} else {
+					out.append(curr.o.toString());
+					out.append(", ");
+				}
+				curr = curr.next;
+				index ++;
+			}
+			out.deleteCharAt(out.length() - 1);
+			out.append("]");
+			
+			return out.toString();
+		
+			
+		}
+		
+	}
 
 
 }

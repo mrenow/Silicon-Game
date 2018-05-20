@@ -208,6 +208,16 @@ public class UnitTests {
 
 			DB_ASSERT(g, new LinkedList<Integer>(2, 4, 9, 5, 1, 3));
 			
+			g.add(1);
+			g.add(1);
+			g.add(1);
+			g.add(1);
+			g.add(1);
+			g.add(1);
+			g.removeAll(1);
+			DB_ASSERT(g, new LinkedList<Integer>(2, 4, 9, 5, 3));
+			
+			
 			
 			
 			

@@ -122,11 +122,24 @@ public abstract class MapNavigator extends Container{
 	public PVector localToMapPos(PVector pos) {
 		return PVector.div(pos, zoom).add(offset);
 	}
+	public float localToMapX(float x) {
+		return x/zoom + offset.x;
+	}
+	public float localToMapY(float y) {
+		return y/zoom + offset.y;
+	}
+	
 	public PVector mapToLocalPos(float x, float y) {
 		return mapToLocalPos(new PVector(x, y));
 	}
 	public PVector mapToLocalPos(PVector pos) {
 		return PVector.sub(pos, offset).mult(zoom);
+	}
+	public float mapToLocalX(float x) {
+		return (x - offset.x)*zoom;
+	}
+	public float mapToLocalY(float y) {
+		return (y - offset.y)*zoom;
 	}
 
 	private void constrainOffset() {

@@ -12,6 +12,7 @@ import events.Listener;
 //Fields: position, size, graphics, parent ?visibility, ?cursorhovering(only when clickListener is implemented), ?updaterequest
 //Functions: setters(pos,size,vis), request update, draw self, reset graphics
 public abstract class Element {
+	
 	// The parent container. If this is a screen object, parent will be null and it
 	// will draw onto the physical screen.
 	Container parent;
@@ -23,14 +24,14 @@ public abstract class Element {
 
 	protected boolean exists = true;
 
-	boolean visible = true;
+	protected boolean visible = true;
 
 	// Passive listeners only active if the listener is implemented
 
 	// passive component of Hover Listener
 	public boolean cursorhover = false;
 
-	// if >0 tells the element that some data has changed and it should update
+	// if > 0 tells the element that some data has changed and it should update
 	// itself before the next draw cycle.
 	// most element types only have one kind of update, but things like shape types,
 	// which have regular updates and shape updates can use more than one update
@@ -41,6 +42,8 @@ public abstract class Element {
 		pos = new PVector(x, y);
 		this.w = w;
 		this.h = h;
+		
+		
 		resetGraphics();
 		if (p != null) {
 			p.add(this);
@@ -113,7 +116,7 @@ public abstract class Element {
 	protected void applyTransform() {
 		pg().translate(pos.x, pos.y);
 	}
-
+ 
 	public PGraphics getGraphics() {
 		return g;
 	}
@@ -134,15 +137,18 @@ public abstract class Element {
 	}
 
 	public PVector getDimensions() {
-		return new PVector(w, h);
+		return new PVector(getWidth(),getHeight());
 	
 	}
-
+	
+	//if width is negative, component is set to the width offset by w
 	public float getWidth() {
+		if(w<0) return parent.getWidth()+w;
 		return w;
 	}
 
 	public float getHeight() {
+		if(h<0) return parent.getHeight()+h;
 		return h;
 	}
 
