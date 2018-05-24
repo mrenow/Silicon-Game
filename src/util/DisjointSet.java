@@ -1,5 +1,7 @@
 package util;
 
+import static util.DB.DB_E;
+
 // 
 
 /* ancestors will contain information about the set as a whole such as:
@@ -17,8 +19,10 @@ public abstract class DisjointSet{
 	//combines two sets if they are different
 	// attaches that to this.
     public void add(DisjointSet that) {
-		that.parent = this;
-		this.addInfo(that);
+		if(!isSameSet(that)) {
+			that.parent = this;
+			this.addInfo(that);
+		}
 	}
     public boolean remove(DisjointSet that) {
     	if(that.parent != this)	return false;
@@ -33,13 +37,16 @@ public abstract class DisjointSet{
 		if(isAncestor()) return this;
 		return parent.getAncestor();
 	}
-	
-	public void makeAncestor() {
-		//s.union(this);
-		if(!isAncestor()) parent.makeAncestor(this);
-		updateSetInfo();
-	}
 	public void makeAncestor(DisjointSet s) {
+		DisjointSet oldparent = parent;
+		parent.remove(this);
+		s.add(this);
+		if(this != oldparent) {
+			oldparent.makeAncestor(this);
+		}
+	}
+
+	/* public void makeAncestor(DisjointSet s) {
 		this.clearInfo();
 		DisjointSet oldparent = parent;
 		s.add(this);
@@ -47,7 +54,7 @@ public abstract class DisjointSet{
 			oldparent.makeAncestor(this);
 		}
 		updateSetInfo();
-	}
+	}*/
 	public boolean isSameSet(DisjointSet s) {
 		return s.getAncestor() == this.getAncestor();
 	}

@@ -7,7 +7,6 @@ import events.ClickEvents;
 
 //text functionality, hover highlighting, button highlighting 
 public class BasicButton extends AbstractButton {
-	boolean pressed = false;
 
 	int DEFAULT_BUTTSTROKE = p3.color(142, 169, 204);
 	int DEFAULT_BUTTBGFILL = p3.color(153, 217, 234);
@@ -18,9 +17,11 @@ public class BasicButton extends AbstractButton {
 	/*
 	 * int fillinactive; int strokeinactive;
 	 */
-	int strokehover;
-	int fillpressed;
-
+	private int strokehover;
+	private int fillpressed;
+	private int stroke;
+	private int fill;
+	
 	TextBox textbox;
 
 	public BasicButton(float x, float y, float w, float h, String text, Container parent) {
@@ -28,6 +29,10 @@ public class BasicButton extends AbstractButton {
 
 		strokehover = DEFAULT_STROKEHOVER;
 		fillpressed = DEFAULT_FILLPRESSED;
+		stroke = DEFAULT_BUTTSTROKE;
+		fill = DEFAULT_BUTTBGFILL;
+		
+		
 		textbox = new TextBox(0, 0, w, h, text, this);
 		textbox.setFill(DEFAULT_BUTTBGFILL);
 		textbox.setStroke(DEFAULT_BUTTSTROKE);
@@ -50,24 +55,85 @@ public class BasicButton extends AbstractButton {
 	}
 
 	public void elementClicked() {
-		textbox.setFill(fillpressed);
-		pressed = true;
+		if(enabled) {
+			textbox.setFill(fillpressed);
+			pressed = true;
+		}
 	}
 
 	public void elementReleased() {
-		textbox.setFill(DEFAULT_BUTTBGFILL);
-		pressed = false;
-	}
-
-	public void elementHovered() {
-		textbox.setStroke(strokehover);
-	}
-
-	public void elementUnhovered() {
-		textbox.setStroke(DEFAULT_BUTTSTROKE);
-		if (p3.mousePressed) {
-			textbox.setFill(DEFAULT_BUTTBGFILL);
+		if(enabled) {
+			textbox.setFill(fill);
 			pressed = false;
 		}
 	}
+
+	public void elementHovered() {
+		if(enabled) {
+			textbox.setStroke(strokehover);
+		}
+	}
+
+	public void elementUnhovered() {
+		if(enabled) {
+			textbox.setStroke(stroke);
+			if (p3.mousePressed) {
+				elementReleased();
+			}
+		}
+	}
+	public void buttonDisabled() {
+		textbox.setFill(fillpressed);
+		textbox.setStroke(strokehover);
+	}
+	public void buttonEnabled() {
+		textbox.setFill(fill);
+		textbox.setStroke(stroke);
+	}
+	public int getStroke() {
+		return stroke;
+	}
+
+	public void setStroke(int stroke) {
+		this.stroke = stroke;
+		if(!cursorhover && enabled) {
+			textbox.setStroke(stroke);
+		}
+	}
+	public int getStrokeHovered() {
+		return strokehover;
+	}
+
+	public void setStrokeHovered(int strokehover) {
+		this.strokehover = strokehover;
+		if(cursorhover && enabled) {
+			textbox.setStroke(strokehover);
+		}
+	}
+	
+	public int getFill() {
+		return fill;
+	}
+
+	public void setFill(int fill) {
+		this.fill = fill;
+		if(!(cursorhover && p3.mousePressed) && enabled) {
+			textbox.setFill(fill);	
+		}
+	}
+	
+	public int getFillPressed() {
+		return fillpressed;
+	}
+
+	public void setFillPressed(int fillpressed) {
+		this.fillpressed = fillpressed;
+		if(cursorhover && p3.mousePressed && enabled) {
+			textbox.setStroke(fillpressed);
+		}
+	}
+
+
+
+
 }

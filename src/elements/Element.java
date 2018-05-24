@@ -196,16 +196,6 @@ public abstract class Element {
 		return parent.isConcrete();
 	}
 
-	// Checks if component's drawing pane is visible within the parent.
-	public boolean isInParent() {
-		Container parent = getParent();
-		if (getPos().x > parent.getWidth() || getPos().y > parent.getHeight()) {
-			return false;
-		} else if (getPos().x + getWidth() < 0 || getPos().y + getHeight() < 0) {
-			return false;
-		}
-		return true;
-	}
 
 	public float localMouseX() {
 		return p3.mouseX - getGlobalPos().x;
@@ -213,6 +203,13 @@ public abstract class Element {
 	}
 	public float localMouseY() {
 		return p3.mouseY - getGlobalPos().y;
+	}
+	public float localPMouseX() {
+		return p3.pmouseX - getGlobalPos().x;
+	}
+	public float localPMouseY() {
+
+		return p3.pmouseY - getGlobalPos().y;
 		
 	}
 
@@ -225,7 +222,6 @@ public abstract class Element {
 			i++;
 		}
 		classname = classname.substring(i + 1);
-		println(classname);
 		return String.format("{%s(%.0f,%.0f)(%.0f,%.0f)}", classname, pos.x, pos.y, w, h);
 
 	}

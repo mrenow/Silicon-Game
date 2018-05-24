@@ -284,22 +284,22 @@ public class UnitTests {
 
 		LinkedList<Integer> get = null;
 		try {
-			get = tree.get(0, 8, 0, 8);
+			get = tree.get(0, 0, 8, 8);
 
 			DB_ASSERT(get.contains(a), true);
 			DB_ASSERT(get.contains(b), true);
 			DB_ASSERT(get.contains(c), true);
 			DB_ASSERT(get.contains(d), true);
 			DB_ASSERT(get.contains(e), true);
-			get = tree.get(2, 5, 1, 4);
+			get = tree.get(2, 1, 5, 4);
 			DB_ASSERT(get.contains(a), true);
 			DB_ASSERT(get.contains(b), true);
 			DB_ASSERT(get.contains(e), true);
-			get = tree.get(2, 5, 2, 4);
+			get = tree.get(2, 2, 5, 4);
 			DB_ASSERT(get.contains(a), true);
 			DB_ASSERT(get.contains(b), true);
 			DB_ASSERT(get.contains(e), true);
-			get = tree.get(1, 7, 1, 7);
+			get = tree.get(1, 1, 7, 7);
 			DB_ASSERT(get.contains(a), true);
 			DB_ASSERT(get.contains(b), true);
 			DB_ASSERT(get.contains(e), true);
@@ -317,10 +317,10 @@ public class UnitTests {
 			tree.delete(0, 0);
 			DB_ASSERT(tree.get(0,0).contains(c),false);
 
-			tree.deleteRange(0, 4, 0, 3);
+			tree.delete(0, 0, 4, 3);
 			DB_ASSERT(tree.size(), 6);
 			
-			get = tree.get(0, 4, 0, 3);
+			get = tree.get(0, 0, 4, 3);
 			DB_ASSERT(tree.get(0, 0).contains(c), false);
 			DB_ASSERT(tree.get(1, 3).contains(a), false);
 			DB_ASSERT(tree.get(2, 2).contains(a), false);
@@ -332,14 +332,14 @@ public class UnitTests {
 			DB_ASSERT(get.contains(d), false);
 			DB_ASSERT(get.contains(e), false);
 	
-			get = tree.get(0, 5, 0, 4);
+			get = tree.get(0, 0, 5, 4);
 			DB_ASSERT(get.contains(a), false);
 			DB_ASSERT(get.contains(b), true);
 			DB_ASSERT(get.contains(c), false);
 			DB_ASSERT(get.contains(d), false);
 			DB_ASSERT(get.contains(e), true);
 			println("tree.elements: ", tree.elements);
-			tree.deleteRange(0, 8, 0, 8);
+			tree.delete(0, 0, 8, 8);
 			DB_ASSERT(tree.elements.empty(),true);
 		}catch(Exception ex) {
 			println("tree.elements: ", tree.elements);

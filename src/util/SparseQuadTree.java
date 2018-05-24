@@ -82,7 +82,7 @@ public class SparseQuadTree<T> {
 	}
 
 	// removes all elements from a specfied range
-	public void deleteRange(int x1, int x2, int y1, int y2) {
+	public void delete(int x1, int y1, int x2, int y2) {
 		
 		for (int y = y1; y < y2; y++) {
 			for (int x = x1; x < x2; x++) {
@@ -105,7 +105,7 @@ public class SparseQuadTree<T> {
 		return new LinkedList<T>();
 	}
 
-	public LinkedList<T> get(int x1, int x2, int y1, int y2) {
+	public LinkedList<T> get(int x1, int y1, int x2, int y2) {
 		
 		LinkedList<T> result = new LinkedList<T>();
 		
@@ -127,13 +127,13 @@ public class SparseQuadTree<T> {
 		// 2 3
 		// annoying warnings
 		if (children[0] != null)
-			result.add(children[0].get(x1, x2, y1, y2));
+			result.add(children[0].get(x1, y1, x2, y2));
 		if (children[1] != null)
-			result.add(children[1].get(x1 - halflength, x2 - halflength, y1, y2));
+			result.add(children[1].get(x1 - halflength, y1, x2 - halflength, y2));
 		if (children[2] != null)
-			result.add(children[2].get(x1, x2, y1 - halflength, y2 - halflength));
+			result.add(children[2].get(x1, y1 - halflength, x2, y2 - halflength));
 		if (children[3] != null)
-			result.add(children[3].get(x1 - halflength, x2 - halflength, y1 - halflength, y2 - halflength));
+			result.add(children[3].get(x1 - halflength, y1 - halflength, x2 - halflength, y2 - halflength));
 		return result;
 	}
 

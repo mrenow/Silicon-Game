@@ -1,7 +1,7 @@
 package game;
 
 import util.LinkedList;
-
+import static util.DB.*;
 /* A non connectable wire that has modifeid conductance properties
  * only updates are permitte`d through external toggle, throught the 
  * toggle() function.
@@ -19,8 +19,16 @@ public class Power extends WireSegment{
 		super(POWER,x,y);
 	}
 	
-	public void toggle() {
-		requesttoggle = true;
+	public void toggle(LinkedList<WireSegment> next) {
+		if(!requesttoggle) {
+			requesttoggle = true;
+			next.add(this);
+		}
+	}
+	public void toggle(LinkedList<WireSegment> next,boolean val) {
+		if(toggled != val) {
+			toggle(next);
+		}
 	}
 	
 	
@@ -30,7 +38,7 @@ public class Power extends WireSegment{
 		connections.clear();
 	
 		for(WireSegment w : getAdjacent()) {
-			if(w.mode == METAL) {
+			if(canMakeConnection(w)) {
 				w.connections.add(this);
 				connections.add(w);
 			}
@@ -39,34 +47,45 @@ public class Power extends WireSegment{
 	public void updatePowered() {
 		if(requesttoggle) {
 			requesttoggle = false;
-			if(active == 0) {
-				active = WIRE_OFF;
-			}else {
-				active = 0;
-			}
+			toggled = !toggled;
 		}
 	}
+	public boolean isToggled() {
+		return toggled;
+	}
 	
+	@Override
 	public void updateActive(LinkedList<WireSegment> current, LinkedList<WireSegment> next) {
-		
 		if(toggled) {
 			setActive(Integer.MIN_VALUE);
+		}else {
+			setActive(WIRE_OFF);
 		}
 		
 		//update wire state and queue updates for appropriate neighbors.
 		if(toggled) {
-			for(WireSegment output : connections) {
-				if(output.getActive() == WireSegment.WIRE_OFF) current.add(output);
+			for(WireSegment connection : connections) {
+				if(!connection.isActive() && connection.isPermissive() && !connection.updatablecurrent) {
+					current.add(connection);
+					connection.updatablecurrent = true;
+				}
 			}
 		} else {
-			for(WireSegment output : connections) {
-				if(output.getActive() != WireSegment.WIRE_OFF) current.add(output);
+			for(WireSegment connection : connections) {
+				if(connection.isActive() && connection.isPermissive() && !connection.updatablecurrent) {
+					current.add(connection);
+					connection.updatablecurrent = true;
+				}
 			}
 		}
+		updatablecurrent = false;
 		// No gate updates as power is a metal type and cannot connect to gates.
 		
 	}
 	
+	public boolean isPermissive() {
+		return false;	
+	}
 	
 	
 	

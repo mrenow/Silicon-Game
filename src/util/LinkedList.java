@@ -80,7 +80,7 @@ public class LinkedList<T> implements Iterable<T> {
 	public boolean contains(LinkedList<Gate> gates) {
 		Node<T> curr = start;
 		while(curr != end) {
-			if(curr == start) {
+			if(curr == gates.start) {
 				return true;
 			}
 			curr = curr.next;

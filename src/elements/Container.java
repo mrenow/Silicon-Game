@@ -1,6 +1,5 @@
 package elements;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import static core.MainProgram.*;
 import static util.DB.*;
@@ -8,7 +7,9 @@ import static util.DB.*;
 //Desc: can hold and draw multiple children elements. Getters and setters are a given.
 public class Container extends Element {
 	final ArrayList<Element> children;
-	protected int backgroundcolor = -1;
+	
+	// 0 is transparent.
+	protected int backgroundcolor = 0;
 	boolean hasbackground = false;
 
 	public Container(float x, float y, float w, float h, Container p) {
@@ -27,21 +28,37 @@ public class Container extends Element {
 
 	protected void update() {
 		resetGraphics();
-		if (backgroundcolor != -1) {
+		if (backgroundcolor != 0) {
 			g.background(backgroundcolor);
 		}
 		drawChildren();
 	}
+	
+	protected void setBackgroundColor(int c) {
+		backgroundcolor = c;
+	}
+	
+	
 
 	// first element behind, last element in front
 	void drawChildren() {
-		for (Element e : children) {
+		for (Element e : new ArrayList<Element>(children)) {
 			// some components are spacer components, they are null and exist to gain more
-			// control over depth
-			if (e != null && e.isInParent()) {
+			// control over d6epth
+			if (e != null && isInParent(e)) {
 				e.draw();
 			}
 		}
+	}
+	// Checks if component's drawing pane is visible within the parent.
+	// does not account for transformations so must be overridden.
+	public boolean isInParent(Element e) {
+		if (e.getPos().x > getWidth() || e.getPos().y > getHeight()) {
+			return false;
+		} else if (e.getPos().x + e.getWidth() < 0 || e.getPos().y + e.getHeight() < 0) {
+			return false;
+		}
+		return true;
 	}
 
 	public ArrayList<Element> getChildren() {

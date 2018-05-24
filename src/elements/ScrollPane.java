@@ -19,9 +19,13 @@ public class ScrollPane extends Container implements ScrollListener, KeyListener
 	public static final byte SCROLL_Y = 1;
 	public static final byte SCROLL_XY = 2;
 	
+	public static final float DEFAULT_SCROLL_SPEED = 10;
+	
 	byte mode;
 	float panewidth;
 	float paneheight;
+	
+	float scrollspeed;
 	// may implement velocity scrolling later, currently is useless.
 	/*
 	 * float scrollvel; float SCROLLDRAG;
@@ -34,26 +38,37 @@ public class ScrollPane extends Container implements ScrollListener, KeyListener
 		this.mode = mode;
 		panewidth = w;
 		paneheight = h;
+		
+		scrollspeed = DEFAULT_SCROLL_SPEED;
 		ScrollEvents.add(this);
 		KeyEvents.add(this);
+		setBackgroundColor(p3.color(200,200,200));
+	
+	}
+	
+	// If scroll for direction is deactivated, it will simply be cut off.
+	public void setPaneWidth(float width) {
+		panewidth = max(width,getWidth());		
+	}
+	
+	public void setPaneHeight(float height) {
+		paneheight = max(height,getHeight());
 	}
 
 	public void elementScrolled(int value) {
 		DB_U(this, "scrolled", value);
 		switch (mode) {
 		case 0:
-			movePane(0, value);
+			movePane(0, value*scrollspeed);
 			break;
 		case 1:
-			movePane(value, 0);
+			movePane(value*scrollspeed, 0);
 			break;
 		case 2:
 			if (KeyEvents.key[SHIFT]) {
-
-				movePane(value, 0);
+				movePane(value*scrollspeed, 0);
 			} else {
-
-				movePane(0, value);
+				movePane(0, value*scrollspeed);
 			}
 			break;
 		}
@@ -63,6 +78,7 @@ public class ScrollPane extends Container implements ScrollListener, KeyListener
 		offset.y += y;
 		offset.x = constrain(offset.x, 0, panewidth - getWidth());
 		offset.y = constrain(offset.y, 0, paneheight - getHeight());
+		requestUpdate();
 	}
 
 	public void elementHovered() {
@@ -97,18 +113,23 @@ public class ScrollPane extends Container implements ScrollListener, KeyListener
 	}
 
 	protected void update() {
-		DB_U(offset);
-
 		g.pushMatrix();
 		g.translate(-offset.x, -offset.y);
-		super.update();
+		if (backgroundcolor != 0) {
+			g.background(backgroundcolor);
+		}
+		drawChildren();
 		g.popMatrix();
 		
 		g.noStroke();
 		g.fill(0, 0, 0, 60);
+		float w = getWidth();
+		float h = getHeight();
+		
+		
 		switch (mode) {
 		case 0:
-			g.rect(2, 2 + offset.y * (h - 4) / paneheight, 10, h * h / paneheight);
+			g.rect(w - 12, 2 + offset.y * (h - 4) / paneheight, 10, h * h / paneheight);
 			break;
 		case 1:
 			g.rect(2 + offset.x * (w - 4) / panewidth, 2, w * w / panewidth, 10);
@@ -119,4 +140,16 @@ public class ScrollPane extends Container implements ScrollListener, KeyListener
 			break;
 		}
 	}
+	public boolean isInParent(Element e) {
+		
+		if (e.getPos().x > getWidth()+offset.x || e.getPos().y > getHeight()+offset.y) {
+			return false;
+		} else if (e.getPos().x + e.getWidth() < offset.x || e.getPos().y + e.getHeight() < offset.y) {
+			return false;
+		}
+		return true;
+		
+	}
+	
+	
 }

@@ -19,12 +19,18 @@ public class Scheduler {
 	private Heap<AsyncEvent> schedule = new Heap<AsyncEvent>();
 	private ArrayList<ActiveAsyncEvent> active = new ArrayList<ActiveAsyncEvent>();
 	
+	private String name;
+	
 	private boolean started = false;
 	public boolean isStarted() {return started;}
 	
+	public Scheduler(String s) {
+		name = s;
+	}
+	
 	public void start() {
 		if(!started) {
-			schedulerThread = new Thread(new AsyncThread(), "AsyncThread");
+			schedulerThread = new Thread(new AsyncThread(), name);
 			schedulerThread.start();
 			started = true;
 		}
@@ -56,11 +62,11 @@ public class Scheduler {
 
 			AsyncEvent event = schedule.pop();
 
-			DB_U("Schedule Updated:", schedule);
+			DB_U(this, "Updated:", schedule);
 			if (event instanceof ActiveAsyncEvent) {
 				ActiveAsyncEvent activeEvent = (ActiveAsyncEvent) event;
 				active.add(activeEvent);
-				DB_U("Active Added", activeEvent);
+				DB_U(this, "Active Added:", activeEvent);
 				activeEvent.start();
 			} else {
 				event.run();
@@ -86,7 +92,10 @@ public class Scheduler {
 		schedule.add(time, event);
 	}
 	
-	
+	public String toString() {
+		return name;
+		
+	}
 
 	public void testScheduler() {
 		callLater(new testEvent(300), 2200);
@@ -95,6 +104,8 @@ public class Scheduler {
 		callAt(new testEvent(100), 3000);
 		callAt(new testEvent(200), 3000);
 	}
+	
+	
 	// thread runs at 20 HZ on average.
 	class AsyncThread implements Runnable {
 		// Program time. Updates will be faster if behind system time.
@@ -105,7 +116,7 @@ public class Scheduler {
 		}
 
 		public void run() {
-			println("start", time);
+			DB_A(this,"started");
 			while (true) {
 				globalEventLoop();
 				try {

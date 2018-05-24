@@ -6,6 +6,7 @@ import java.awt.event.KeyEvent;
 
 import static core.MainProgram.*;
 
+// Forgive my sins, its the only practical way I could think of to get the key constants.
 public class KeyEvents extends KeyEvent{
 
 	//dont use, just a hack
@@ -22,9 +23,15 @@ public class KeyEvents extends KeyEvent{
 		list.add(e);
 	}
 
-	public static void pressCheck() {
+	public static void pressCheck() {		
 		code = p3.keyCode;
 		key[p3.keyCode] = true;
+		
+		// Stops processing from exiting on escape.
+		// However this requires full reliance on the new system
+		p3.keyCode = 0;
+		p3.key = 0;
+		
 		for (KeyListener e : new ArrayList<KeyListener>(KeyEvents.list)) {
 			e.keyPressed();
 		}

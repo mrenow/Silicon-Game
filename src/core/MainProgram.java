@@ -9,6 +9,7 @@ import elements.*;
 import util.*;
 import async.*;
 import shapes.*;
+import screens.*;
 import sidequest.Mandelbrot;
 import tests.*;
 
@@ -26,19 +27,19 @@ import processing.event.MouseEvent;
 public class MainProgram extends PApplet {
 
 	public static MainProgram p3;
-	public static Scheduler globalscheduler = new Scheduler();
+	public static Scheduler globalscheduler = new Scheduler("GlobalThread");
 	
 	
 	public static void main(String[] args) {
 		PApplet.main("core.MainProgram");
 	}
 
-	public Screen LEVEL;
+	public static Screen LEVEL;
 
 	public void setup() {
 		p3 = this;
 		globalscheduler.start();
-		LEVEL = new TestScreen();
+		LEVEL = new MenuScreen();
 
 		//Scheduler.testScheduler();
 		UnitTests.heapTest();
@@ -47,6 +48,7 @@ public class MainProgram extends PApplet {
 		test1.yell();
 		PointerSpeedTest.test();
 		GameTests.testConnections();
+		
 
 	}
 
@@ -112,11 +114,19 @@ public class MainProgram extends PApplet {
 
 class TestScreen extends Screen implements MovementListener{
 	Arrow a;
-	MapNavigator b;
+	GameArea game;
+	DataDisplay display;
 	Text c;
-	ScrollPane osc;
+	
+	BasicButton startbutton,stopbutton;
+	
+	
 	TestScreen() {
 		super();
+		
+	
+		
+		
 		/*
 		 * Box b1, b2, b3, b4; b = new GridContainer(330, 0, 1000, 1000,50,50 ,this);
 		 * for(int i = 0; i<120;i++){ new Box(0,0, 50, 50, b).setFill(i*2, 100, 100); }
@@ -129,43 +139,40 @@ class TestScreen extends Screen implements MovementListener{
 		 * b5.setFill(255,0,0); //ScrollPane e = new ScrollPane(0,0,600,300,b,2,this);
 		 */
 		//a = new Arrow(200, 200, 40, 30, 20, 200, 50, this);
-		b = new GameArea(0,0,1200,600,6,this);
-		b.
+		
+		
+		game = new GameArea(0,0,1200,600,6,this);
+		display = new DataDisplay(0,600,1200,200,this);
+		game.setDisplay(display);
+		
 		
 
-		//new BasicButton(0, 0, 100, 100, "hello", this);
+		startbutton = new BasicButton(0, 650, 100, 100, "Run", this) {
+			@Override
+			public void elementClicked(){
+				game.run();
+				startbutton.setEnabled(false);
+				stopbutton.setEnabled(true);
+			}
+		};
+		stopbutton = new BasicButton(100, 650, 100, 100, "Stop", this) {
+			@Override
+			public void elementClicked(){
+				game.reset();
+				stopbutton.setEnabled(false);
+				startbutton.setEnabled(true);
+			}
+		}; 
+		stopbutton.setEnabled(false);
+		
 		//new ImageButton(100, 100, 100, 100, p3.loadImage("NavArrow.bmp"), this);
 		//b = new Mandelbrot(0, 0, getWidth(), getHeight(), this);
 		c = new Text(10,10,400,80,"Location:",this);
 		
-		globalscheduler.call(new loop());
 	}
 
 	protected void update() {
 		super.update();
-	}
-
-	class loop extends ActiveAsyncEvent {
-		@Override
-		public void start() {
-			// TODO Auto-generated method stub
-
-		}
-
-		@Override
-		public boolean condition() {
-			// TODO Auto-generated method stub
-			return exists;
-		}
-
-		@Override
-		public void run() {
-			PVector pos = b.localToMapPos(new PVector(p3.mouseX, p3.mouseY));
-			c.setText(String.format("Location: [%.2f, %.2f]\nZoom: %.2f",pos.x,pos.y,b.getZoom()));
-			//c.setText("loc: ["+ Float.toString(pos.x) + Float.toString(pos.y) + "]");
-			
-		}
-
 	}
 
 
