@@ -70,7 +70,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	int dimx, dimy;
 	
 	
-	private boolean db = true;
+	private boolean db = false;
 	public SparseQuadTree<WireSegment> tiles;
 	
 	
@@ -92,6 +92,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		offset = new PVector(0, 0);
 		
 		WireSegment.container = tiles;
+		WireSegment.potentialdisconnects.clear();
 
 		setZoomBounds(1, 100);
 		setOffsetBounds(-500, -500, 800, 800);
@@ -111,6 +112,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		this.display.game = this;
 		
 	}
+	
 	protected void update() {
 		super.update();
 		
@@ -256,7 +258,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 		
 		// Active Metal
-		g.fill(200,200,200,140);
+		g.fill(255,255,255,140);
 		for(WireSegment w1 : active) {
 			g.rect(w1.x, w1.y, 1, 1);
 		}
@@ -283,7 +285,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			
 		}
 		// Active Power
-		g.fill(200,200,200,140);
+		g.fill(255,255,255,140);
 		for(WireSegment w1 : active) {
 			g.rect(w1.x, w1.y, 1, 1);
 		}
@@ -305,14 +307,14 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		//draw scopes
 		g.noFill();
 		g.stroke(0,144,0,70);
-		for(Oscilliscope o : display.scopes) {
+		for(Oscilloscope o : display.scopes) {
 			g.rect(o.x, o.y, 1, 1);
 		}
 		
 		g.textSize(0.5f);
 		g.textAlign(CENTER,CENTER);
 		g.fill(0,33,33);
-		for(Oscilliscope o : display.scopes) {
+		for(Oscilloscope o : display.scopes) {
 		
 			g.text(o.id, o.x + 0.5f, o.y + 0.5f);
 		}
@@ -497,7 +499,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				// P_TYPE
 				g.fill(220, 220, 0, 70);
 				if(tileContains(mousex, mousey, WireSegment.N_TYPE)) {
-					g.rect(mousex + 0.1f,mousey+0.1f,0.8f,0.8f);
+					g.rect(mousex + 0.1f, mousey + 0.1f, 0.8f, 0.8f);
 				}else {
 					g.rect(mousex, mousey, 1,1);
 				}
@@ -643,11 +645,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				PVector gpos = getGlobalPos();
 				drawLine(localMouseX(), localMouseY(), localPMouseX(), localPMouseY());
 			}
-			requestUpdate();
 		}
-		if(debug == 3) {
-			requestUpdate();
-		}
+		requestUpdate();
 		
 	}
 
@@ -891,6 +890,15 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 		return false;
 	}
+	public WireSegment getObjectAt(int x, int y, byte... mode) {
+		
+		for(WireSegment w : tiles.get(x, y)) {
+			for(byte m : mode) {
+				if(w.mode == m) return w;
+			}
+		}
+		return null;
+	}
 	
 	
 	
@@ -920,7 +928,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	}
 	// Brute force is viable because of low component quanity
 	private void deleteScope(int x, int y) {
-		Oscilliscope o = scopeAt(x,y);
+		Oscilloscope o = scopeAt(x,y);
 		if(o != null) {
 			display.removeScope(o);
 			display.updateScopes();
@@ -940,8 +948,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	public boolean hasScope(int x, int y) {
 		return scopeAt(x,y) != null;
 	}
-	public Oscilliscope scopeAt(int x, int y) {
-		for (Oscilliscope o : display.scopes) {
+	public Oscilloscope scopeAt(int x, int y) {
+		for (Oscilloscope o : display.scopes) {
 			if(o.x == x && o.y == y) {
 				return o;
 			}
