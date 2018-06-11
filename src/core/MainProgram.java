@@ -4,7 +4,12 @@
  *  Phone: 0452 413 358
  * 
  * Last modified: 5/25/2018
- * Engineer of the Technocracy Version 1.0.0 - First release.
+ * Engineer of the Technocracy Version 1.1 
+ * Changelog:
+ * - Added editing rotation and flipping of clipboard.
+ * - Fixed some visual effects.
+ * - Modified some controls
+ * - Added more splash screen text
  * 
  * Current Bugs:
  *  - Highly connected wires tend to create infinite update loops 
@@ -49,14 +54,12 @@ public class MainProgram extends PApplet {
 		Images.init();
 		globalscheduler.start();
 		LEVEL = new MenuScreen();
-		//Scheduler.testScheduler();
+		
+		//Ensure main data structures are in working condition.
+		globalscheduler.testScheduler();
 		UnitTests.heapTest();
 		UnitTests.linkedListTest();
 		UnitTests.sparseQuadTreeTest();
-		test1.yell();
-		PointerSpeedTest.test();
-		GameTests.testConnections();
-		
 
 	}
 

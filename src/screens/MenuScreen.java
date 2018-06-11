@@ -124,6 +124,7 @@ public class MenuScreen extends Screen{
 	
 	
 	private final static String[] LEVEL_TEXT = {
+			"Sandbox",
 			"Diode",
 			"Inverter",
 			"Or Gate",
@@ -146,6 +147,7 @@ public class MenuScreen extends Screen{
 			"4 Bit Input Divider"
 	};
 	private final static int[] LEVEL_SIZE = {
+		10,//"Sandbox",
 		2,//"Diode",
 		2,//"Inverter",
 		2,//"Or Gate",
@@ -174,8 +176,12 @@ public class MenuScreen extends Screen{
 		"Announcement: Please do not walk into the spinning blades positioned around the halls UNLESS asked.",
 		"Announcement: Remember, you must make a sacrifice. For Science!",
 		"Announcement: Will whoever dropped their spleen in the spinning blades please retrieve it, all operations involving those spinning blades have been halted.",
-		"Announcement: There is now a free spot in the Face - Monitor transplant operation as we misplaced our test subject. Volunteers would be appreciated."
-			
+		"Announcement: There is now a free spot in the Face - Monitor transplant operation as we misplaced our test subject. Volunteers would be appreciated.",
+		"Announcement: ZZZzzZZZZZZZgGGzZShHSSZZSSsZshSSHZSSSSSZSZSSShelpSHZhhSHZZZz",
+		"Announcement: Please remember, in the unexpected case of death, please assume the Being Dead Position so staff can easily identify and dispose of you.",
+		"Announcement: Do not panic. This is not a drill.",
+		"Announcement: Seven. Six. Eight. One. Three. Two. Ninety nine. Twelve. Zero. Fourteen. Sixteen. Sixty Seven. Five. Ten. Fifteen. Twenty. Six point five five five five fXHZXSZHZZZZX"
+		
 	};
 	
 	

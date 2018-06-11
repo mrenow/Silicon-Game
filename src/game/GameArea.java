@@ -45,8 +45,9 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	final static int VK_CTRL_PASTE = KeyEvents.VK_V;	
 	final static int VK_CTRL_CUT   = KeyEvents.VK_X;	
 	final static int VK_EDIT_DESELECT = KeyEvents.VK_ESCAPE;
-	final static int VK_EDIT_ROTATE = KeyEvents.VK_LESS;
-	final static int VK_EDIT_ANTI_ROTATE = KeyEvents.VK_GREATER;
+	final static int VK_EDIT_ROTATE = KeyEvents.VK_PERIOD;
+	final static int VK_EDIT_ANTI_ROTATE = KeyEvents.VK_COMMA;
+	final static int VK_EDIT_FLIP = KeyEvents.VK_SLASH;
 	final static int VK_EDIT_DELETE = KeyEvents.VK_DELETE;
 
 	
@@ -72,7 +73,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 	private boolean db = false;
 	public SparseQuadTree<WireSegment> tiles;
-	
 	
 	public LinkedList<Power> sources = new LinkedList<Power>();
 	
@@ -130,17 +130,14 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		drawObjects(objects);
 		g.popMatrix();
 		
-		drawSelection();
-		drawPreview();
-		
-		
+		if(!running) {
+			drawPreview();
+			drawSelection();
+		}
+		 
 		// debug overlay indication direction of WireSegment chain
 		// debug overlay for grid
 		if(db) drawDebug();
-		
-		
-		
-		
 	}
 	
 	private void drawObjects(LinkedList<WireSegment> objects) {
@@ -153,6 +150,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		// Draw N silicon
 		ListIterator<WireSegment> witer = objects.iterator();
 		ListIterator<Gate> giter;
+		
 		LinkedList<WireSegment> active = new LinkedList<WireSegment>();
 		LinkedList<Gate> gates = new LinkedList<Gate>();
 
@@ -465,17 +463,38 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 	}
 	private void drawPreview() {
-		if(running) return;
-		
 		PVector mousepos = localToMapPos(localMouseX(), localMouseY());
 		int mousex = floor(mousepos.x);
 		int mousey = floor(mousepos.y);
 		if(ispasting) {
 			g.pushMatrix();
-			
 			transformView();
-			g.translate(mousex - startx, mousey- starty);
-			//apply additional transforms
+
+			//move 0,0 to mousex, mousey 
+			g.translate(mousex, mousey);
+			g.rotate(rotation*PI/2);
+			if(flipped)	g.scale(1,-1);	
+
+			switch((flipped)?((5-rotation)%4):rotation) {
+			case 0:
+				//do nothing 
+				break;
+			case 1:
+				//bottom left
+				g.translate(0,-clipboardregion.getHeight());
+				break;
+			case 2:
+				//bottom right
+				g.translate(-clipboardregion.getWidth(),-clipboardregion.getHeight());
+				break;
+			case 3:
+				//top right
+				g.translate(-clipboardregion.getWidth(),0);
+				break;
+			}
+			
+			//move startx, starty to 0,0
+			g.translate(-startx, -starty);
 			drawObjects(clipboard);
 			g.popMatrix();
 		}
@@ -606,6 +625,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			}
 		}
 		
+		// Editing
 		if(makemode == EDIT && hasSelection()) {
 			if(KeyEvents.key[VK_EDIT_DESELECT]) {
 				ispasting = false;
@@ -616,10 +636,14 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 		//rotate
 		if(KeyEvents.key[VK_EDIT_ROTATE]) {
-			rotation++;
+			rotateSelection(1);
 		}
 		if(KeyEvents.key[VK_EDIT_ANTI_ROTATE]) {
-			rotation--;
+			rotateSelection(-1);
+		}
+		if(KeyEvents.key[VK_EDIT_FLIP]) {
+			flipSelection();
+			
 		}
 		
 		requestUpdate();
@@ -662,7 +686,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				endPaste();
 			}
 			
-		}else if(p3.mouseButton == LEFT && makemode == EDIT) {
+		}else if(p3.mouseButton == LEFT && makemode == EDIT && !ispasting) {
 			// if selection already exists discard
 			region = null;
 			
@@ -681,7 +705,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	}
 
 	public void elementReleased() {
-		if(p3.mouseButton == LEFT && makemode == EDIT && selectionx != -1 && selectiony != -1) {
+		if(p3.mouseButton == LEFT && makemode == EDIT && !ispasting && selectionx != -1 && selectiony != -1) {
 			
 
 			PVector mousepos = localToMapPos(localMouseX(),localMouseY());
@@ -1019,11 +1043,10 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	}
 	
 	/*
-	 * SELECTION
+	 * SELECTION AND EDITING
 	 */
 	
-
-	
+	// Assume x2 > x1, y2 > y1 
 	private class Selection {
 		int x1;
 		int y1;
@@ -1035,6 +1058,19 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			this.x2 = constrain(x2,0,dimx);
 			this.y2 = constrain(y2,0,dimy);
 		}
+		public Selection(Selection that) {
+			this.x1 = that.x1;
+			this.y1 = that.y1;
+			this.x2 = that.x2;
+			this.y2 = that.y2;
+		}
+		private int getWidth() {
+			return x2 - x1;
+		}
+		public int getHeight() {
+			return y2 - y1;
+		}
+		
 	}
 	Selection region = null;
 	
@@ -1043,7 +1079,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 	// upon select and copy all wires in the range will be placed in here.
 	private LinkedList<WireSegment> clipboard;
-	
+	Selection clipboardregion = null;
 	// paste mode
 	// CTRL to place without ending paste mode
 	// < > to Rotate selection
@@ -1072,13 +1108,26 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	public void selectRegion(int x1, int y1, int x2, int y2) {
 		region = new Selection(x1,y1,x2,y2);
 	}
-
+	
+	public void rotateSelection(int rot) {
+		rotation += rot + 4;
+		rotation %= 4;
+		
+	}
+	public void flipSelection() {
+		flipped = !flipped;
+	}
+	
 	public void copyRegion() {
 		clipboard = tiles.get(region.x1,region.y1,region.x2,region.y2);
+		clipboardregion = new Selection(region);
 		iscopying = true;
 		startx = region.x1;
 		starty = region.y1;
+		rotation = 0;
+		flipped = false;
 	}
+	
 	public void discardSelection() {
 		region = null;
 		iscopying = false;
@@ -1086,8 +1135,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 
 	public void beginPaste() {
 		ispasting = true;
-		
-		
 	}
 
 	// Flips around x axis then clockwise rotation of 90 degrees.
@@ -1100,14 +1147,40 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			
 			int localx = w.x-startx;
 			int localy = w.y-starty;
-			newx = x + localx;
-			newy = y + localy;
-			/*
+			
+			
 			if(flipped) {
-				localx *= -1;
+				localy = region.getHeight() - localy;
 			}
-			newx = height* 
-			*/	
+			int newlocalx;
+			int newlocaly;
+			println(rotation);
+			switch((rotation + 4)% 4) {
+				case 0:
+					newlocalx = localx;
+					newlocaly = localy;
+					break;
+				case 1:
+					newlocalx = clipboardregion.getHeight() - localy-1;
+					newlocaly = localx;
+					break;
+				case 2:
+					newlocalx = clipboardregion.getWidth() - localx-1;
+					newlocaly = clipboardregion.getHeight() - localy-1;
+					break;
+				case 3:
+					newlocalx = localy-1 ;
+					newlocaly = clipboardregion.getWidth() - localx-1;
+					break;
+				default:
+					newlocalx = localx;
+					newlocaly = localy;
+					break;
+			}
+			
+			newx = x + newlocalx;
+			newy = y + newlocaly;
+			
 			delete(newx,newy,w.getLayer());
 			makeObject(newx,newy, w.mode);	
 		}
@@ -1116,9 +1189,10 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 	public void endPaste() {
 		ispasting = false;
-		
-		
 	}
+	
+	
+	
 	
 	
 	
@@ -1241,10 +1315,3 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	}
 }
 
-// only one silicon can be placed per tile
-// only one conductor may be placed per tile
-// vias may be placed anywhere
-// gates are silicon, may have any number of connections and a base. Gates are
-// not objects, they are just pieces of silicon
-// which have been based by any number of silicons
-//

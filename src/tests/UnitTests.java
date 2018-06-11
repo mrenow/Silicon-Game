@@ -234,7 +234,6 @@ public class UnitTests {
 
 	public static void sparseQuadTreeTest() {
 		
-		
 		// depth 4:, 8*8 grid.
 		SparseQuadTree<Integer> tree = null;
 		Integer a, b, c, d, e;

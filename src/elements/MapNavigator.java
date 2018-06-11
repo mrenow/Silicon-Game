@@ -141,6 +141,20 @@ public abstract class MapNavigator extends Container{
 	public float mapToLocalY(float y) {
 		return (y - offset.y)*zoom;
 	}
+	
+	public float mapToLocalDist(float d) {
+		return d*zoom;	
+	}
+	public PVector mapToLocalDist(PVector v) {
+		return PVector.mult(v,zoom);	
+	}
+	public float localToMapDist(float d) {
+		return d/zoom;
+	}
+	public PVector localToMapDist(PVector v) {
+		return PVector.div(v,zoom);
+	}
+	
 
 	private void constrainOffset() {
 		offset.x = constrain(offset.x, minoffset.x, maxoffset.x);

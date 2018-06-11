@@ -10,7 +10,7 @@ import elements.Screen;
 import events.*;
 import processing.core.PVector;
 
-//               ooo it lines up :) \/
+//               ooo it lines up :) \/t
 // Functioned as a test for the MapNavigator module.
 public class Mandelbrot extends MapNavigator implements KeyListener, ScrollListener, MovementListener{
 	
@@ -20,10 +20,11 @@ public class Mandelbrot extends MapNavigator implements KeyListener, ScrollListe
 		ScrollEvents.add(this);
 		MovementEvents.add(this);
 		zoomrate = 1.05f;
-		setZoomBounds(10,Float.POSITIVE_INFINITY);
 		zoom = 100;
 		offset.x = 0;
 		offset.y = 0;
+
+		setZoomBounds(10,Float.POSITIVE_INFINITY);
 		setOffsetBounds(-2,-2,4,4);
 		// TODO Auto-generated constructor stub
 	}

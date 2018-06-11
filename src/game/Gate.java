@@ -55,17 +55,6 @@ public class Gate extends WireSegment{
 				gates.add((Gate)w);
 				((Gate)w).inputs.add(this);						
 			}
-	
-			/*
-			if((mode == N_GATE && w.mode%3 == P_TYPE) || (mode == P_GATE && w.mode%3 == N_TYPE)) {
-				w.connections.add(this);
-				connections.add(w);
-			}
-			//gate input
-			if((mode == P_GATE && w.mode%3 == P_TYPE) || (mode == N_GATE && w.mode%3 == N_TYPE)) {
-				w.gates.add(this);
-				inputs.add(w);					
-			}*/
 		}
 	}
 

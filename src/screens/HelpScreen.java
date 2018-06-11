@@ -29,8 +29,8 @@ public class HelpScreen  extends Screen{
 	class DocumentPane extends ScrollPane{
 		DocumentPane(float x, float y, float w, float h, Container p){
 			super(x, y, w, h, SCROLL_Y, p);
-			Image i1 = new Image(0,15,0.5f,Images.DOCUMENT_1, this);
-			Image i2 = new Image(0,0,0.5f,Images.DOCUMENT_2, this);
+			Image i1 = new Image(0, 15, 0.5f, Images.DOCUMENT_1, this);
+			Image i2 = new Image(0, 0, 0.5f, Images.DOCUMENT_2, this);
 			
 			i1.setPos(getWidth()/2 -i1.getWidth()/2, 15);
 			

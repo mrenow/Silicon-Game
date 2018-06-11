@@ -21,7 +21,7 @@ public class PointerSpeedTest {
 		curr.next = (curr = first);
 		//test speed
 		int t = p3.millis();
-		int i =0;
+		int i = 0;
 		do {
 			curr = curr.next;
 			curr = curr.next;
