@@ -7,12 +7,17 @@ import java.util.Iterator;
 import java.util.ListIterator;
 
 import game.Gate;
-
+import java.io.Serializable;
 /*
+ * An extension of the default linked list concept which allows linked lists to be contained within one another
+ * 
+ * 
  * An empty linked list contains one node, the start node. The payload is null.
  * Also, welcome to Pointer Hell. Is it your first time here?
  */
-public class LinkedList<T> implements Iterable<T> {
+public class LLinkedList<T> implements Iterable<T>, Serializable{
+	
+	public static final long serialVersionUID = 1L;
 
 	// only to be referenced by internal functions.
 	protected Node<T> start;
@@ -24,19 +29,19 @@ public class LinkedList<T> implements Iterable<T> {
 	int index;
 
 	// start -> end
-	public LinkedList() {
+	public LLinkedList() {
 		start = new Node<T>(Node.START, end = new Node<T>(Node.END,null));
 		index = 0;
 	}
 
 	// linked list with one element.
-	public LinkedList(T e) {
+	public LLinkedList(T e) {
 		this();
 		add(e);
 	}
 
 	// linked
-	public LinkedList(T... list) {
+	public LLinkedList(T... list) {
 		this();
 		for (int i = 0; i < list.length; i++) {
 			add(list[i]);
@@ -44,7 +49,7 @@ public class LinkedList<T> implements Iterable<T> {
 	}
 
 	// makes a copy of a linked list down to node payload
-	public LinkedList(LinkedList<T> list) {
+	public LLinkedList(LLinkedList<T> list) {
 		this();
 		for(T e : list) {
 			add(e);
@@ -77,7 +82,7 @@ public class LinkedList<T> implements Iterable<T> {
 		return indexOf(e) != -1;
 	}
 	//checks for start node
-	public boolean contains(LinkedList<Gate> gates) {
+	public boolean contains(LLinkedList<Gate> gates) {
 		Node<T> curr = start;
 		while(curr != end) {
 			if(curr == gates.start) {
@@ -102,7 +107,7 @@ public class LinkedList<T> implements Iterable<T> {
 	}
 
 	// *y*
-	public void addFirst(LinkedList<T> list) {
+	public void addFirst(LLinkedList<T> list) {
 		list.end.setNext(start.getNext());
 		start.setNext(list.start);
 	}
@@ -122,7 +127,7 @@ public class LinkedList<T> implements Iterable<T> {
 
 	// *y*
 	// End transforms into new lists start node
-	public void add(LinkedList<T> list) {
+	public void add(LLinkedList<T> list) {
 		Node<T> endnext = end.next;
 		end.assume(list.start);
 		list.start = end;
@@ -150,7 +155,7 @@ public class LinkedList<T> implements Iterable<T> {
 		prev.setNext(next);
 	}
 
-	public void addAt(int i, LinkedList<T> list) {
+	public void addAt(int i, LLinkedList<T> list) {
 		resetFocus();
 		focusTo(i);
 		// Join end
@@ -184,7 +189,7 @@ public class LinkedList<T> implements Iterable<T> {
 	}
 	// Searches for the start node of list
 	// Assumes that the existence of a start node implies an end node.
-	public boolean remove(LinkedList<T> list) {
+	public boolean remove(LLinkedList<T> list) {
 		Node<T> curr = start;
 		
 		while(curr.next != list.start) {
@@ -329,10 +334,10 @@ public class LinkedList<T> implements Iterable<T> {
 	}
 
 	public boolean equals(Object that) {
-		if (that instanceof LinkedList) {
-			ListIterator<T> thisiterator = iterator();
+		if (that instanceof LLinkedList) {
+			ListIterator<T> thisiterator = this.iterator();
 			// Casting of that to LinkedList guaranteed.
-			ListIterator<T> thatiterator = ((LinkedList<T>) that).iterator();
+			ListIterator<T> thatiterator = ((LLinkedList<T>) that).iterator();
 			while (thisiterator.hasNext() && thatiterator.hasNext()) {
 				if (!thisiterator.next().equals(thatiterator.next()))
 					return false;
@@ -389,6 +394,7 @@ public class LinkedList<T> implements Iterable<T> {
 	// ACTUALLY I KINDA DOUBT IT THIS WAS A WASTE OF MY TIME
 	// I GUESS IF YOURE NOT WRITING ITS A OKAY
 	// WAIT NO ITS GREAT JOKES
+	// TODO: MAKE DOUBLY LINKED FFS
 	private class LinkedIterator implements ListIterator<T> {
 		Node<T> curr;
 		int id;
@@ -414,11 +420,20 @@ public class LinkedList<T> implements Iterable<T> {
 		}
 
 		@Override
-		//delete curr, become curr.prev
+		// delete curr, become curr.prev
+		// This code does not work whatsoever, Im not particularly sure how it got here.
+		// This functionality will not work until linked list is doubly linked.
 		public void remove() {
-			Node<T> prev = curr;
-			curr.assume(curr.prev);
+			Node<T> next = curr.next;
+			Node<T> prev = curr.prev;
+			curr.assume(prev);
+			curr.next = next;
+			curr.next.prev = curr;
+			if (curr.mode != Node.NODE) {
+				curr = curr.getPrev();
+			}
 			if (prev == start) start = curr;
+			
 		}
 
 		@Override
@@ -497,7 +512,9 @@ public class LinkedList<T> implements Iterable<T> {
 
 
 }
-class Node<T>{
+class Node<T> implements Serializable{
+	private static final long serialVersionUID = 1L;
+	
 	Node<T> next = null;
 	Node<T> prev = null;
 	public byte mode = 0;

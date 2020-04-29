@@ -1,6 +1,6 @@
 package game;
 
-import util.LinkedList;
+import util.LLinkedList;
 import static util.DB.*;
 /* A non connectable wire that has modifeid conductance properties
  * only updates are permitte`d through external toggle, throught the 
@@ -19,13 +19,13 @@ public class Power extends WireSegment{
 		super(POWER,x,y);
 	}
 	
-	public void toggle(LinkedList<WireSegment> next) {
+	public void toggle(LLinkedList<WireSegment> next) {
 		if(!requesttoggle) {
 			requesttoggle = true;
 			next.add(this);
 		}
 	}
-	public void toggle(LinkedList<WireSegment> next,boolean val) {
+	public void toggle(LLinkedList<WireSegment> next,boolean val) {
 		if(toggled != val) {
 			toggle(next);
 		}
@@ -55,7 +55,7 @@ public class Power extends WireSegment{
 	}
 	
 	@Override
-	public void updateActive(LinkedList<WireSegment> current, LinkedList<WireSegment> next) {
+	public void updateActive(LLinkedList<WireSegment> current, LLinkedList<WireSegment> next) {
 		if(toggled) {
 			setActive(Integer.MIN_VALUE);
 		}else {

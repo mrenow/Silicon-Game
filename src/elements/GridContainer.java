@@ -20,6 +20,11 @@ public class GridContainer extends Container {
 
 	public void setDimensions(float x, float y) {
 		super.setDimensions(x, y);
+		if(this.getChildren().size() == 0) {
+			requestUpdate();
+			return;
+		}
+		
 		// if number of columns has changed from previous value
 		if (columns != (columns = floor(w / boxw))) {
 			float col = 0, row = 0;
@@ -30,10 +35,9 @@ public class GridContainer extends Container {
 					row++;
 					col = 0;
 				}
-				println(getChild(i).pos);
 			}
 		}
-		// update has been already requested.
+		// update has already been requested by children.
 	}
 
 	public void add(Element object) {

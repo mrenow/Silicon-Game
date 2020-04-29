@@ -4,6 +4,7 @@ import static core.MainProgram.*;
 import static util.DB.*;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import events.*;
 import shapes_unused.*;
@@ -32,13 +33,16 @@ public class UnitTests {
 	}
 
 	public static void linkedListTest() {
-		LinkedList<Integer> a = null, b = null, c = null,
+		LLinkedList<Integer> a = null, b = null, c = null,
 				            d = null, e = null, f = null,
 				            g = null, h = null, i = null,
-						    j = null, k = null, l = null;
+						    j = null, k = null, l = null,
+						    m = null;
+		Iterator<Integer> miter;
 		try {
-			a = new LinkedList<Integer>(new Integer[] { 1, 2, 3, 4, 5 });
-			b = new LinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 7 });
+		try {
+			a = new LLinkedList<Integer>(new Integer[] { 1, 2, 3, 4, 5 });
+			b = new LLinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 7 });
 			DB_ASSERT(a.size(), 5);
 			a.add(6);
 			DB_ASSERT(a.size(), 6);
@@ -51,27 +55,28 @@ public class UnitTests {
 			a.addAt(3, b);
 			DB_ASSERT(a.size(), 11);
 
-			DB_ASSERT(a, new LinkedList<Integer>(new Integer[] { 1, 2, 3, 3, 4, 5, 6, 7, 4, 5, 6 }));
+			DB_ASSERT(a, new LLinkedList<Integer>(new Integer[] { 1, 2, 3, 3, 4, 5, 6, 7, 4, 5, 6 }));
 			a.addAt(1, new Integer[] { 9, 8, 7, 6, 5, 4, 3 });
 			DB_ASSERT(a.size(), 18);
-			DB_ASSERT(a, new LinkedList<Integer>(new Integer[] { 1, 9, 8, 7, 6, 5, 4, 3, 2, 3, 3, 4, 5, 6, 7, 4, 5, 6 }));
-			DB_ASSERT(new LinkedList<Integer>(a),new LinkedList<Integer>(new Integer[] { 1, 9, 8, 7, 6, 5, 4, 3, 2, 3, 3, 4, 5, 6, 7, 4, 5, 6 }));
+			DB_ASSERT(a, new LLinkedList<Integer>(new Integer[] { 1, 9, 8, 7, 6, 5, 4, 3, 2, 3, 3, 4, 5, 6, 7, 4, 5, 6 }));
+			DB_ASSERT(new LLinkedList<Integer>(a),new LLinkedList<Integer>(new Integer[] { 1, 9, 8, 7, 6, 5, 4, 3, 2, 3, 3, 4, 5, 6, 7, 4, 5, 6 }));
 		} catch (Exception ex) {
 			println(a);
 			println(b);
 			throw ex;
 		}
 		try {
-			c = new LinkedList<Integer>(new Integer[] { 9, 7, 5, 3, 1 });
-			d = new LinkedList<Integer>(new Integer[] { 3, 1, 4, 1, 5 });
+			c = new LLinkedList<Integer>(new Integer[] { 9, 7, 5, 3, 1 });
+			d = new LLinkedList<Integer>(new Integer[] { 3, 1, 4, 1, 5 });
 			c.addAt(0, d);
-			DB_ASSERT(c, new LinkedList<Integer>(new Integer[] { 3, 1, 4, 1, 5, 9, 7, 5, 3, 1 }));
+			DB_ASSERT(c, new LLinkedList<Integer>(new Integer[] { 3, 1, 4, 1, 5, 9, 7, 5, 3, 1 }));
 			c.add(77);
-			DB_ASSERT(c, new LinkedList<Integer>(new Integer[] { 3, 1, 4, 1, 5, 9, 7, 5, 3, 1, 77 }));
+			DB_ASSERT(c, new LLinkedList<Integer>(new Integer[] { 3, 1, 4, 1, 5, 9, 7, 5, 3, 1, 77 }));
 			c.add(new Integer[] { 1, 2, 3 });
-			DB_ASSERT(c, new LinkedList<Integer>(new Integer[] { 3, 1, 4, 1, 5, 9, 7, 5, 3, 1, 77, 1, 2, 3 }));
+			DB_ASSERT(c, new LLinkedList<Integer>(new Integer[] { 3, 1, 4, 1, 5, 9, 7, 5, 3, 1, 77, 1, 2, 3 }));
 			c.addFirst(1);
-			DB_ASSERT(c, new LinkedList<Integer>(new Integer[] { 1, 3, 1, 4, 1, 5, 9, 7, 5, 3, 1, 77, 1, 2, 3 }));
+			DB_ASSERT(c, new LLinkedList<Integer>(new Integer[] { 1, 3, 1, 4, 1, 5, 9, 7, 5, 3, 1, 77, 1, 2, 3 }));
+			
 		} catch (Exception ex) {
 			println(c);
 			println(d);
@@ -80,43 +85,43 @@ public class UnitTests {
 		
 		//testing modification within self.
 		try {
-			e = new LinkedList<Integer>(new Integer[] { 1, 2, 3, 4, 5 });
-			f = new LinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 7 });
+			e = new LLinkedList<Integer>(new Integer[] { 1, 2, 3, 4, 5 });
+			f = new LLinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 7 });
 			e.addAt(3, f);
 
 			f.addAt(4, 5);
-			DB_ASSERT(f, new LinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 5, 7 }));
+			DB_ASSERT(f, new LLinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 5, 7 }));
 
 			f.addAt(4, new Integer[] { 9, 8, 9 });
-			DB_ASSERT(f, new LinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 9, 8, 9, 5, 7 }));
+			DB_ASSERT(f, new LLinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 9, 8, 9, 5, 7 }));
 
-			f.addAt(5, new LinkedList<Integer>(new Integer[] { 9, 8, 9 }));
-			DB_ASSERT(f, new LinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7 }));
-			DB_ASSERT(e, new LinkedList<Integer>(new Integer[] { 1, 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7, 4, 5 }));
+			f.addAt(5, new LLinkedList<Integer>(new Integer[] { 9, 8, 9 }));
+			DB_ASSERT(f, new LLinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7 }));
+			DB_ASSERT(e, new LLinkedList<Integer>(new Integer[] { 1, 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7, 4, 5 }));
 			DB_ASSERT(e.size(), 17);
 
 			DB_ASSERT(e.take(0), 1);
-			DB_ASSERT(e, new LinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7, 4, 5 }));
+			DB_ASSERT(e, new LLinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7, 4, 5 }));
 			DB_ASSERT(e.size(), 16);
 
 			DB_ASSERT(e.take(15), 5);
-			DB_ASSERT(e, new LinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7, 4 }));
+			DB_ASSERT(e, new LLinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7, 4 }));
 			DB_ASSERT(e.size(), 15);
 
 			DB_ASSERT(e.remove(17), false);
-			DB_ASSERT(e, new LinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7, 4 }));
+			DB_ASSERT(e, new LLinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 7, 4 }));
 			DB_ASSERT(e.size(), 15);
 
 
 			DB_ASSERT(f.remove(7), true);
-			DB_ASSERT(e, new LinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 4 }));
+			DB_ASSERT(e, new LLinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 4 }));
 			DB_ASSERT(e.size(), 14);
 
 			DB_ASSERT(f.remove(7), false);
-			DB_ASSERT(e, new LinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 4 }));
+			DB_ASSERT(e, new LLinkedList<Integer>(new Integer[] { 2, 3, 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5, 4 }));
 			DB_ASSERT(e.size(), 14);
 
-			DB_ASSERT(f, new LinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5 }));
+			DB_ASSERT(f, new LLinkedList<Integer>(new Integer[] { 3, 4, 5, 6, 9, 9, 8, 9, 8, 9, 5 }));
 		} catch (Exception ex) {
 			println("e: ", e);
 			println("f: ", f);
@@ -124,89 +129,89 @@ public class UnitTests {
 		}
 		//testing more esoteric behaviour (list in lists in lists and changing the child from the parent)
 		try {
-			g = new LinkedList<Integer>();
-			h = new LinkedList<Integer>();
-			i = new LinkedList<Integer>();
-			j = new LinkedList<Integer>();
+			g = new LLinkedList<Integer>();
+			h = new LLinkedList<Integer>();
+			i = new LLinkedList<Integer>();
+			j = new LLinkedList<Integer>();
 			
 			// + + - -
 			g.add(h);
-			DB_ASSERT(g, new LinkedList<Integer>());
-			DB_ASSERT(h, new LinkedList<Integer>());
+			DB_ASSERT(g, new LLinkedList<Integer>());
+			DB_ASSERT(h, new LLinkedList<Integer>());
 			DB_ASSERT(g.size(), 0);
 			
 			// + + - 1 -
 			g.add(1);
-			DB_ASSERT(g, new LinkedList<Integer>(1));
+			DB_ASSERT(g, new LLinkedList<Integer>(1));
 			DB_ASSERT(g.size(), 1);
 			
 			// + 2 + - 1 -
 			g.addFirst(2);
-			DB_ASSERT(g, new LinkedList<Integer>(2,1));
+			DB_ASSERT(g, new LLinkedList<Integer>(2,1));
 			DB_ASSERT(g.size(), 2);
 			
 			// + 2 + - 1 3 -
 			g.add(3);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 1, 3));
 			DB_ASSERT(g.size(), 3);
 			
 			// + 2 + 3 4 - 1 3 -
 			h.add(3,4);
-			DB_ASSERT(h, new LinkedList<Integer>(3, 4));
+			DB_ASSERT(h, new LLinkedList<Integer>(3, 4));
 			DB_ASSERT(h.size(), 2);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 3, 4, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 3, 4, 1, 3));
 			DB_ASSERT(g.size(), 5);
 			
 			// + 2 + 3 + - 4 - 1 3 - 
 			g.addAt(2,i);
-			DB_ASSERT(h, new LinkedList<Integer>(3, 4));
+			DB_ASSERT(h, new LLinkedList<Integer>(3, 4));
 			DB_ASSERT(h.size(), 2);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 3, 4, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 3, 4, 1, 3));
 			DB_ASSERT(g.size(), 5);
 			
 			// + 2 + 3 + 4 5 - 4 - 1 3 -
 			i.add(4,5);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 3, 4, 5, 4, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 3, 4, 5, 4, 1, 3));
 			DB_ASSERT(g.size(), 7);
 			
 			// + 2 + 3 + 4 8 9 5 - 4 - 1 3 -
 			i.addAt(1,8,9);
-			DB_ASSERT(h, new LinkedList<Integer>(3, 4, 8, 9, 5, 4));
+			DB_ASSERT(h, new LLinkedList<Integer>(3, 4, 8, 9, 5, 4));
 			DB_ASSERT(h.size(), 6);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 3, 4, 8, 9, 5, 4, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 3, 4, 8, 9, 5, 4, 1, 3));
 			DB_ASSERT(g.size(), 9);
 	
 			// + 2 + 3 + 4 8 9 5 - 4 + - - 1 3 -
 			h.add(j);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 3, 4, 8, 9, 5, 4, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 3, 4, 8, 9, 5, 4, 1, 3));
 			DB_ASSERT(g.size(), 9);
 			
 			// + 2 + 3 + 4 9 5 - 4 + - - 1 3 -
 			g.remove(8);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 3, 4, 9, 5, 4, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 3, 4, 9, 5, 4, 1, 3));
 			DB_ASSERT(g.size(), 8);
 
 			// + 2 + 3 + 4 9 5 - + - - 1 3 -
 			g.take(5);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 3, 4, 9, 5, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 3, 4, 9, 5, 1, 3));
 			DB_ASSERT(g.size(), 7);
 			
 			// + 2 + + 4 9 5 - + - - 1 3 -
 			g.take(1);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 4, 9, 5, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 4, 9, 5, 1, 3));
 			DB_ASSERT(g.size(), 6);
 
 			// + 2 + + 4 9 5 - + 1 2 3 - - 1 3 -
 			j.add(1,2,3);
-			DB_ASSERT(h, new LinkedList<Integer>(4, 9, 5, 1, 2, 3));
+			DB_ASSERT(h, new LLinkedList<Integer>(4, 9, 5, 1, 2, 3));
 			DB_ASSERT(h.size(), 6);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 4, 9, 5, 1, 2, 3, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 4, 9, 5, 1, 2, 3, 1, 3));
 			DB_ASSERT(g.size(), 9);
 			
 			// + 2 + + 4 9 5 - - 1 3 -
 			h.remove(j);
 
-			DB_ASSERT(g, new LinkedList<Integer>(2, 4, 9, 5, 1, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 4, 9, 5, 1, 3));
 			
 			g.add(1);
 			g.add(1);
@@ -215,7 +220,7 @@ public class UnitTests {
 			g.add(1);
 			g.add(1);
 			g.removeAll(1);
-			DB_ASSERT(g, new LinkedList<Integer>(2, 4, 9, 5, 3));
+			DB_ASSERT(g, new LLinkedList<Integer>(2, 4, 9, 5, 3));
 			
 			
 			
@@ -228,8 +233,31 @@ public class UnitTests {
 			println("j: ", j);
 			throw ex;
 		}
+		try {
+			m = new LLinkedList<Integer>(1, 2, 3, 4, 5);
+			miter = m.iterator();
+			DB_ASSERT(miter.next(), 1);
+			DB_ASSERT(miter.next(), 2);
+			miter.remove();
+			DB_ASSERT(m,new LLinkedList<Integer>(1,3,4,5));
+			DB_ASSERT(miter.next(), 3);
+			DB_ASSERT(miter.next(), 4);
+			miter.remove();
+			DB_ASSERT(m,new LLinkedList<Integer>(1,2,3,5));
+			DB_ASSERT(miter.next(), 5);
+		} catch( Exception ex) {
+			println("m: ",m);
+			throw ex;
+		}
 		
-
+		} catch (Exception ex) {
+			// Implement assert exception at some point pls
+			DB_E("UNIT TESTS COMPLETED UNSUCCESSFULLY");
+			println(ex.toString());
+			println(ex.getStackTrace());
+			
+			System.exit(1);
+		}
 	}
 
 	public static void sparseQuadTreeTest() {
@@ -237,7 +265,7 @@ public class UnitTests {
 		// depth 4:, 8*8 grid.
 		SparseQuadTree<Integer> tree = null;
 		Integer a, b, c, d, e;
-
+		
 		a = 1;
 		b = 2;
 		c = 3;
@@ -281,7 +309,7 @@ public class UnitTests {
 			throw ex;
 		}
 
-		LinkedList<Integer> get = null;
+		LLinkedList<Integer> get = null;
 		try {
 			get = tree.get(0, 0, 8, 8);
 

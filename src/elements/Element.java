@@ -8,9 +8,25 @@ import static util.DB.*;
 
 import events.Events;
 import events.Listener;
-
+// Documentation fail
 //Fields: position, size, graphics, parent ?visibility, ?cursorhovering(only when clickListener is implemented), ?updaterequest
 //Functions: setters(pos,size,vis), request update, draw self, reset graphics
+/*
+ * Unfortunately, not the most thread safe system in existence.
+ * A fix for this system is to give Elements a lock protected draw state buffer - all params 
+ * that are required for drawing the object are copied to the buffer on request update.
+ * This way we can have an arbitrary thread doing object state updates, while a universal drawing
+ * thread can schedule draw operations. Cpu usage can further be optimized by writing a breadth-first
+ * drawing protocol which can skip locked states where the buffer is being written to.
+ * 
+ * Heres a slightly ugly and unsafe, but somewhat implementable variant of the above. We define a
+ * copy-for-draw function for the given element, which only copies the data needed for drawing
+ * to the object, and sets a boolean to indicate its role. This object is then passed normally to
+ * the drawing thread. This also means that each container needs to store two copies of each child...
+ * Request update also needs to somehow write to that child list. 
+ * 
+ * Alas, tis but a dream.
+ */
 public abstract class Element {
 	
 	// The parent container. If this is a screen object, parent will be null and it
@@ -21,7 +37,8 @@ public abstract class Element {
 	float w, h;
 
 	protected PGraphics g;
-
+	
+	// Indidcates whether the element has been destroyed
 	protected boolean exists = true;
 
 	protected boolean visible = true;
@@ -124,6 +141,12 @@ public abstract class Element {
 	protected void applyTransform() {
 		pg().translate(pos.x, pos.y);
 	}
+	
+	// PUBLIC FUNCTIONS
+	/* Any functions that will change the graphics state must call request update
+	 * once appropriate variables have been modified.
+	 * 
+	 */
  
 	public PGraphics getGraphics() {
 		return g;
@@ -177,7 +200,7 @@ public abstract class Element {
 		pos.x = x;
 		pos.y = y;
 		// transform updates do not require self to be updated
-		requestUpdate();
+		parent.requestUpdate();
 	}
 
 	public void setPos(PVector pos) {

@@ -3,19 +3,22 @@ package game;
 import static core.MainProgram.*;
 import static util.DB.*;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
 import processing.core.PVector;
 import util.DisjointSet;
-import util.LinkedList;
+import util.LLinkedList;
 import util.SparseQuadTree;
 
-public class WireSegment extends DisjointSet {
+public class WireSegment extends DisjointSet implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
 	
 	//assigned depending on gameArea context.
 	public static SparseQuadTree<WireSegment> container;
-	public static LinkedList<WireSegment> potentialdisconnects = new LinkedList<WireSegment>(); 
+	public static LLinkedList<WireSegment> potentialdisconnects = new LLinkedList<WireSegment>(); 
 	
 	public static final byte METAL = 0;
 	public static final byte N_TYPE = 1;
@@ -46,8 +49,8 @@ public class WireSegment extends DisjointSet {
 	// Set Info
 	public static int WIRE_OFF = Integer.MAX_VALUE;
 	
-	public LinkedList<Gate> gates;
-	public LinkedList<WireSegment> connections;
+	public LLinkedList<Gate> gates;
+	public LLinkedList<WireSegment> connections;
 	// Pointer to an int for instant update
 	// Priority value for signal propagation logic
 	protected int active = Integer.MAX_VALUE;
@@ -73,8 +76,8 @@ public class WireSegment extends DisjointSet {
 		this.mode = mode;
 		this.x = x;
 		this.y = y;
-		this.gates = new LinkedList<Gate>();
-		this.connections = new LinkedList<WireSegment>();
+		this.gates = new LLinkedList<Gate>();
+		this.connections = new LLinkedList<WireSegment>();
 		this.parent = this;
 		
 
@@ -161,7 +164,7 @@ public class WireSegment extends DisjointSet {
 		return (this.mode == that.mode && !(this.mode == VIA || that.mode == VIA));
 	}
 	public void updateConnections() {
-		ListIterator<WireSegment> iter = new LinkedList<WireSegment>(getAdjacent()).iterator();
+		ListIterator<WireSegment> iter = new LLinkedList<WireSegment>(getAdjacent()).iterator();
 		WireSegment w;
 		connections.clear();
 		gates.clear();
@@ -257,7 +260,7 @@ public class WireSegment extends DisjointSet {
 		s.append("}");
 		return s.toString();
 	}
-	private LinkedList<WireSegment> getAdjacent(Direction d) {
+	private LLinkedList<WireSegment> getAdjacent(Direction d) {
 		
 		switch (d) {
 		case NORTH:
@@ -269,15 +272,15 @@ public class WireSegment extends DisjointSet {
 		case WEST:
 			return container.get(x - 1, y);
 		case IN:
-			LinkedList<WireSegment> l = container.get(x, y);
+			LLinkedList<WireSegment> l = container.get(x, y);
 			l.remove(this);
 			return l;
 		}
 		return null;
 	}
 	
-	public LinkedList<WireSegment> getAdjacent(){
-		LinkedList<WireSegment> out = new LinkedList<WireSegment>();
+	public LLinkedList<WireSegment> getAdjacent(){
+		LLinkedList<WireSegment> out = new LLinkedList<WireSegment>();
 		for(Direction d: Direction.values()) {
 			out.add(getAdjacent(d));
 		}
@@ -313,7 +316,7 @@ public class WireSegment extends DisjointSet {
 		
 	}
 	
-	public void updateActive( LinkedList<WireSegment> current, LinkedList<WireSegment> next) {
+	public void updateActive( LLinkedList<WireSegment> current, LLinkedList<WireSegment> next) {
 		if(!isAncestor()) {
 			((WireSegment)getAncestor()).updateActive(current,next);
 			return;

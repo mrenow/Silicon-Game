@@ -33,8 +33,6 @@ public class HelpScreen  extends Screen{
 			Image i2 = new Image(0, 0, 0.5f, Images.DOCUMENT_2, this);
 			
 			i1.setPos(getWidth()/2 -i1.getWidth()/2, 15);
-			
-			
 			i2.setPos(getWidth()/2 -i2.getWidth()/2, 45 + i1.getHeight());
 		}
 		

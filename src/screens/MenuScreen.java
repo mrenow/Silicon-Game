@@ -105,7 +105,7 @@ public class MenuScreen extends Screen{
 			play = new ImageButton(getWidth()-80,5,getHeight()-10,getHeight()-10,Images.FORWARD_ARROW,this) {
 				public void elementReleased() {
 					LEVEL.destroyAll();
-					LEVEL = new GameScreen(LEVEL_SIZE[id]);
+					LEVEL = new GameScreen(LEVEL_TEXT[id],LEVEL_SIZE[id]);
 					
 				}
 			};

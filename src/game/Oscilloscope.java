@@ -2,15 +2,18 @@ package game;
 import static core.MainProgram.*;
 import static util.DB.*;
 
+import java.io.Serializable;
 import java.util.ListIterator;
 
 import async.ActiveAsyncEvent;
 import elements.Container;
 import elements.Element;
-import util.LinkedList;
+import util.LLinkedList;
 
 
-public class Oscilloscope extends Element{
+public class Oscilloscope extends Element implements Serializable{
+	private static final long serialVersionUID = 1L;
+	
 	public static float HEIGHT = 30;
 
 	
@@ -21,7 +24,7 @@ public class Oscilloscope extends Element{
 	//queue
 	public int capacity = 50; 
 	public int size = 0;
-	private LinkedList<Boolean> data;
+	private LLinkedList<Boolean> data;
 	
 	//monitor
 	public WireSegment probe;
@@ -41,7 +44,7 @@ public class Oscilloscope extends Element{
 		this.x = x;
 		this.y = y;
 		game = p.game;
-		data = new LinkedList<Boolean>();
+		data = new LLinkedList<Boolean>();
 		datawidth = (getWidth()- 100)/(capacity-1);
 	}
 	

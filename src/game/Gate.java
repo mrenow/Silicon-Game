@@ -1,7 +1,7 @@
 package game;
 import static core.MainProgram.*;
 import static util.DB.*;
-import util.LinkedList;
+import util.LLinkedList;
 
 
 
@@ -12,13 +12,13 @@ import util.LinkedList;
 public class Gate extends WireSegment{
 	
 	
-	LinkedList<WireSegment> inputs;
+	LLinkedList<WireSegment> inputs;
 	
 	boolean permissive = (mode == P_GATE);
 	
 	public Gate(byte mode, int x, int y) {
 		super(mode, x,y);
-		inputs = new LinkedList<WireSegment>();
+		inputs = new LLinkedList<WireSegment>();
 	}
 	
 	public boolean isPermissive() {
@@ -27,7 +27,7 @@ public class Gate extends WireSegment{
 	}
 	
 	public void updatePowered() {
-		permissive = (mode == N_GATE) == powered();
+		permissive = (mode == N_GATE) == getPowered();
 	}
 	
 	
@@ -74,12 +74,12 @@ public class Gate extends WireSegment{
 		}
 	}
 	
-	public void updateActive(LinkedList<WireSegment> current, LinkedList<WireSegment> next) {
+	public void updateActive(LLinkedList<WireSegment> current, LLinkedList<WireSegment> next) {
 		//if segment is gate, do not permit flow based on gate type
 		if(isPermissive()) super.updateActive(current,next);
 		else{
 			for (Gate g : gates) {
-				if(g.powered()&& !g.updatablenext) {
+				if(g.getPowered()&& !g.updatablenext) {
 					next.add(g);
 					g.updatablenext = true;
 				}
@@ -95,10 +95,12 @@ public class Gate extends WireSegment{
 		}
 	}
 	
-	
+	public boolean powered() {
+		return (mode == N_GATE) == permissive;
+	}
 	
 
-	public boolean powered() {
+	public boolean getPowered() {
 		for(WireSegment w : inputs) {
 			if(w.getActive() != WIRE_OFF) return true;
 		}

@@ -45,8 +45,6 @@ public class Container extends Element {
 	protected void setBackgroundColor(int c) {
 		backgroundcolor = c;
 	}
-	
-	
 
 	// first element behind, last element in front
 	void drawChildren() {

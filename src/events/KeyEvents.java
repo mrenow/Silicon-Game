@@ -6,7 +6,7 @@ import java.awt.event.KeyEvent;
 
 import static core.MainProgram.*;
 
-// Forgive my sins, its the only practical way I could think of to get the key constants.
+// Forgive me my sins, its the only practical way I could think of to get the key constants.
 public class KeyEvents extends KeyEvent{
 
 	//dont use, just a hack
@@ -14,7 +14,6 @@ public class KeyEvents extends KeyEvent{
 		super(arg0, arg1, arg2, arg3, arg4);
 		// TODO Auto-generated constructor stub
 	}
-
 	public static boolean[] key = new boolean[65536];
 	public static int code = 0;
 	public static ArrayList<KeyListener> list = new ArrayList<KeyListener>();

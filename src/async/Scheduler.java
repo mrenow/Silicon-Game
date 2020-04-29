@@ -116,7 +116,7 @@ public class Scheduler {
 		}
 
 		public void run() {
-			DB_A(this,"started");
+			DB_A(this, "started");
 			while (true) {
 				globalEventLoop();
 				try {
@@ -131,8 +131,6 @@ public class Scheduler {
 
 	}
 }
-
-
 
 class testEvent extends ActiveAsyncEvent {
 	int t;

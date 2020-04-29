@@ -5,6 +5,7 @@ import java.util.Arrays;
 import static util.DB.*;
 import static core.MainProgram.*;
 import static processing.core.PApplet.println;
+import java.io.Serializable;
 
 /* A range tree that stores pointers to elements.
  * Each element of the range tree stores a list of all
@@ -15,7 +16,9 @@ import static processing.core.PApplet.println;
  * do not have any children either.
  */
 @SuppressWarnings("unchecked")
-public class SparseQuadTree<T> {
+public class SparseQuadTree<T> implements Serializable{
+
+	public static final long serialVersionUID = 1L;
 
 	public int depth;
 	int length;
@@ -30,12 +33,12 @@ public class SparseQuadTree<T> {
 	// O(N) search
 	// O(1) remove element
 	// O(1) update n parent lists
-	public LinkedList<T> elements;
+	public LLinkedList<T> elements;
 
 	public SparseQuadTree(int depth) {
 		this.depth = depth;
 		length = 1 << depth;
-		elements = new LinkedList<T>();
+		elements = new LLinkedList<T>();
 	}
 
 	public SparseQuadTree(int depth, T[][] data) {
@@ -75,7 +78,7 @@ public class SparseQuadTree<T> {
 	public void delete(int x, int y) {
 		SparseQuadTree<T> t = getLowestSubtree(x, y);
 		if (t.depth == 0) {
-			DB_U(new LinkedList<T>(t.elements), " deleted in ", this);
+			DB_U(new LLinkedList<T>(t.elements), " deleted in ", this);
 			t.elements.clear();
 		}
 		update(x,y);
@@ -95,19 +98,19 @@ public class SparseQuadTree<T> {
 
 	// gets pointer if exists or creates new one
 
-	public LinkedList<T> get(int x, int y) {
-		if(!inRange(x,y)) return new LinkedList<T>();
+	public LLinkedList<T> get(int x, int y) {
+		if(!inRange(x,y)) return new LLinkedList<T>();
 		// make a copy of the pointers.
 		SparseQuadTree<T> t = getLowestSubtree(x, y);
 		if(t.depth == 0) {
-			return new LinkedList<T>(t.elements);
+			return new LLinkedList<T>(t.elements);
 		}
-		return new LinkedList<T>();
+		return new LLinkedList<T>();
 	}
 
-	public LinkedList<T> get(int x1, int y1, int x2, int y2) {
+	public LLinkedList<T> get(int x1, int y1, int x2, int y2) {
 		
-		LinkedList<T> result = new LinkedList<T>();
+		LLinkedList<T> result = new LLinkedList<T>();
 		
 		// match query range to bounds
 		x1 = constrain(x1, 0, length);
@@ -120,7 +123,7 @@ public class SparseQuadTree<T> {
 			return result;
 		// if bounds are matched perfectly
 		if(abs(x1 - x2) == length && abs(y1 - y2) == length) {
-			return new LinkedList<T>(elements);
+			return new LLinkedList<T>(elements);
 		}
 		int halflength = length / 2;
 		// 0 1

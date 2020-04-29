@@ -3,13 +3,16 @@
  *  Email: other.ezhui@gmail.com
  *  Phone: 0452 413 358
  * 
- * Last modified: 5/25/2018
+ * Last modified: 4/29/2020
  * Engineer of the Technocracy Version 1.1 
  * Changelog:
+ * 1.1
  * - Added editing rotation and flipping of clipboard.
  * - Fixed some visual effects.
  * - Modified some controls
  * - Added more splash screen text
+ * 1.2
+ * - Projects can now be saved with ctrl-s
  * 
  * Current Bugs:
  *  - Highly connected wires tend to create infinite update loops 
@@ -38,6 +41,7 @@ import processing.core.PVector;
 import processing.event.MouseEvent;
 
 public class MainProgram extends PApplet {
+	
 
 	public static MainProgram p3;
 	public static Scheduler globalscheduler = new Scheduler("GlobalThread");
@@ -56,11 +60,12 @@ public class MainProgram extends PApplet {
 		LEVEL = new MenuScreen();
 		
 		//Ensure main data structures are in working condition.
-		globalscheduler.testScheduler();
-		UnitTests.heapTest();
-		UnitTests.linkedListTest();
-		UnitTests.sparseQuadTreeTest();
-
+		if(debug > 0) {
+			globalscheduler.testScheduler();
+			UnitTests.heapTest();
+			UnitTests.linkedListTest();
+			UnitTests.sparseQuadTreeTest();
+		}
 	}
 
 	public void settings() {

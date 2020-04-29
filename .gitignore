@@ -4,3 +4,4 @@ bin/
 ignore/
 .classpath
 .project
+/.metadata/

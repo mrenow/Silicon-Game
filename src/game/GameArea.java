@@ -12,7 +12,8 @@ import events.MovementListener;
 import events.ScrollEvents;
 import events.ScrollListener;
 import processing.core.PVector;
-import util.LinkedList;
+import util.DB;
+import util.LLinkedList;
 import util.SparseQuadTree;
 
 import java.util.ListIterator;
@@ -44,6 +45,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	final static int VK_CTRL_COPY  = KeyEvents.VK_C;
 	final static int VK_CTRL_PASTE = KeyEvents.VK_V;	
 	final static int VK_CTRL_CUT   = KeyEvents.VK_X;	
+	
 	final static int VK_EDIT_DESELECT = KeyEvents.VK_ESCAPE;
 	final static int VK_EDIT_ROTATE = KeyEvents.VK_PERIOD;
 	final static int VK_EDIT_ANTI_ROTATE = KeyEvents.VK_COMMA;
@@ -62,7 +64,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 	
 	
-	// tempoary start points of selection
+	// temporary start points of selection
 	int selectionx = -1;
 	int selectiony = -1;
 	
@@ -74,15 +76,15 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	private boolean db = false;
 	public SparseQuadTree<WireSegment> tiles;
 	
-	public LinkedList<Power> sources = new LinkedList<Power>();
+	public LLinkedList<Power> sources = new LLinkedList<Power>();
 	
 	public DataDisplay display;
-	
-	
 
-	public GameArea(float x, float y, float w, float h, int size, Container p) {
+
+	public GameArea(float x, float y, float w, float h, int size, Container p, SparseQuadTree<WireSegment> load_tiles) {
 		super(x, y, w, h, p);
-		tiles = new SparseQuadTree<WireSegment>(size);
+		
+		tiles = load_tiles;
 		dimx = dimy = 1 << size;
 		offset = new PVector(dimx / 2, dimy / 2);
 		backgroundcolor = p3.color(230, 230, 230);
@@ -105,18 +107,19 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		tickscheduler.start();
 		setSpeed(10);
-
+	}
+	public GameArea(float x, float y, float w, float h, int size, Container p) {
+		this(x, y, w, h, size, p, new SparseQuadTree<WireSegment>(size));
 	}
 	public void setDisplay(DataDisplay display) {
 		this.display = display; 
 		this.display.game = this;
-		
 	}
 	
 	protected void update() {
 		super.update();
 		
-		LinkedList<WireSegment> objects = new LinkedList<WireSegment>(tiles.get(floor(offset.x),
+		LLinkedList<WireSegment> objects = new LLinkedList<WireSegment>(tiles.get(floor(offset.x),
 				floor(offset.y), ceil(offset.x + getWidth() / zoom), ceil(offset.y + getHeight() / zoom))); 
 
 		g.pushMatrix();
@@ -140,7 +143,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		if(db) drawDebug();
 	}
 	
-	private void drawObjects(LinkedList<WireSegment> objects) {
+	private void drawObjects(LLinkedList<WireSegment> objects) {
 		
 		// Only loads objects within viewing pane
 		// New linked list for optimization to remove start and end nodes.
@@ -151,8 +154,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		ListIterator<WireSegment> witer = objects.iterator();
 		ListIterator<Gate> giter;
 		
-		LinkedList<WireSegment> active = new LinkedList<WireSegment>();
-		LinkedList<Gate> gates = new LinkedList<Gate>();
+		LLinkedList<WireSegment> active = new LLinkedList<WireSegment>();
+		LLinkedList<Gate> gates = new LLinkedList<Gate>();
 
 		g.noStroke();
 		
@@ -185,10 +188,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		while(giter.hasNext()) {
 			g1 = giter.next();
 			if(g1.powered()) {
-				g.rect(g1.x + 0.1f,g1.y+0.1f,0.8f,0.8f);
+				g.rect(g1.x + 0.1f,g1.y + 0.1f, 0.8f, 0.8f);
 				giter.remove();
 			}
 		}
+		DB.DB_U(gates);
+		
+		
 		// inactive gates
 		g.fill(100,100,0);
 		for (Gate g2: gates) {
@@ -608,7 +614,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 		if(KeyEvents.key[KeyEvents.VK_CONTROL]) {
 			// Pasting will generate a ghost overlay of the copied selection
-			// keys will edit the pastmode as it is being previewed
+			// keys will edit the pastemode as it is being previewed
 			// a mouse click will paste the selection at the region.
 			if(KeyEvents.key[VK_CTRL_PASTE]) {
 				if(hasClipboard()) {
@@ -761,7 +767,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		while(disconnectiter.hasNext()) {
 
 			w1 = disconnectiter.next();
-			ListIterator<WireSegment> iter = new LinkedList<WireSegment>(w1.getAdjacent()).iterator();
+			ListIterator<WireSegment> iter = new LLinkedList<WireSegment>(w1.getAdjacent()).iterator();
 			//if the wire has a potential adjacent connection it is not directly connected to.
 			boolean isvalid = false;
 			while(iter.hasNext()) {
@@ -874,27 +880,15 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		switch(mode) {
 		case WireSegment.METAL:
-			tiles.add(w = new WireSegment(WireSegment.METAL, x, y), x, y);
-			w.updateConnections();
-			break;
 		case WireSegment.P_TYPE:
-			tiles.add(w = new WireSegment(WireSegment.P_TYPE, x, y), x, y);
-			w.updateConnections();
-			break;
 		case WireSegment.N_TYPE:
-			tiles.add(w = new WireSegment(WireSegment.N_TYPE, x, y), x, y);
-			w.updateConnections();
-			break;
 		case WireSegment.VIA:
-			tiles.add(w = new WireSegment(WireSegment.VIA, x, y), x, y);
+			tiles.add(w = new WireSegment(mode, x, y), x, y);
 			w.updateConnections();
 			break;
 		case WireSegment.P_GATE:
-			tiles.add(g = new Gate(WireSegment.P_GATE,x,y),x, y);
-			g.updateConnections();
-			break;
 		case WireSegment.N_GATE:
-			tiles.add(g = new Gate(WireSegment.N_GATE,x,y),x, y);
+			tiles.add(g = new Gate(mode,x,y),x, y);
 			g.updateConnections();
 			break;
 		case WireSegment.POWER:
@@ -929,7 +923,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 
 	private void delete(int x, int y) {
-		LinkedList<WireSegment> current = tiles.get(x, y);
+		LLinkedList<WireSegment> current = tiles.get(x, y);
 		for (WireSegment w : current) {
 			if(((makemode == MAKE_VIA  ) == (w.mode == WireSegment.VIA  ))
 	         &&((makemode == MAKE_METAL) == (w.mode == WireSegment.METAL))
@@ -941,7 +935,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	}
 
 	private void delete(int x, int y, byte ... mode) {
-		LinkedList<WireSegment> current = tiles.get(x, y);
+		LLinkedList<WireSegment> current = tiles.get(x, y);
 		for (WireSegment w : current) {
 			for(byte m: mode) {
 				if(w.mode == m) {
@@ -1078,7 +1072,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	boolean flipped = false;
 	
 	// upon select and copy all wires in the range will be placed in here.
-	private LinkedList<WireSegment> clipboard;
+	private LLinkedList<WireSegment> clipboard;
 	Selection clipboardregion = null;
 	// paste mode
 	// CTRL to place without ending paste mode
@@ -1201,9 +1195,9 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
  	 */
 	
 	//to be updated in this tick
-	private LinkedList<WireSegment> currentwireupdates = new LinkedList<WireSegment>();
+	private LLinkedList<WireSegment> currentwireupdates = new LLinkedList<WireSegment>();
 	//to be updated next tick
-	private LinkedList<WireSegment> nextwireupdates = new LinkedList<WireSegment>();
+	private LLinkedList<WireSegment> nextwireupdates = new LLinkedList<WireSegment>();
 	
 	
 	// Thread states
@@ -1268,7 +1262,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		while(!currentwireupdates.empty()) {
 			// Makes new iterator and continuously updates through queued updates
-			ListIterator<WireSegment> iter = new LinkedList<WireSegment>(currentwireupdates).iterator();
+			ListIterator<WireSegment> iter = new LLinkedList<WireSegment>(currentwireupdates).iterator();
 			for(WireSegment w : currentwireupdates) {
 				w.updatablecurrent = false;
 			}			
