@@ -61,7 +61,7 @@ public class MainProgram extends PApplet {
 		LEVEL = new TestScreen();
 		
 		//Ensure main data structures are in working condition.
-		if(debug > 44) {
+		if(debug > 0) {
 			globalscheduler.testScheduler();
 			UnitTests.heapTest();
 			UnitTests.linkedListTest();

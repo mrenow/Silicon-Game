@@ -7,17 +7,12 @@ import java.util.Iterator;
 import java.util.ListIterator;
 
 import game.Gate;
-import java.io.Serializable;
+
 /*
- * An extension of the default linked list concept which allows linked lists to be contained within one another
- * 
- * 
  * An empty linked list contains one node, the start node. The payload is null.
  * Also, welcome to Pointer Hell. Is it your first time here?
  */
-public class LLinkedList<T> implements Iterable<T>, Serializable{
-	
-	public static final long serialVersionUID = 1L;
+public class LLinkedList<T> implements Iterable<T> {
 
 	// only to be referenced by internal functions.
 	protected Node<T> start;
@@ -243,13 +238,13 @@ public class LLinkedList<T> implements Iterable<T>, Serializable{
 	
 	// UNTESTED
 	// splits before element at specified index
-	/*public LinkedList<T>[] split(int i) {
+	/*public LLinkedList<T>[] split(int i) {
 		if (i == 0)
-			return new LinkedList[] { new LinkedList(), new LinkedList(start.getNext()) };
+			return new LLinkedList[] { new LLinkedList(), new LLinkedList(start.getNext()) };
 		resetFocus();
 		focusTo(i);
 		Node<T> start2 = focus.switchNext(null);
-		return new LinkedList[] { new LinkedList(start.getNext()), new LinkedList(start2) };
+		return new LLinkedList[] { new LLinkedList(start.getNext()), new LLinkedList(start2) };
 	}*/
 
 	// Focus manupulation
@@ -295,7 +290,7 @@ public class LLinkedList<T> implements Iterable<T>, Serializable{
 	public String toString() {
 		StringBuilder out = new StringBuilder(5);
 		// 
-		out.append("LinkedList:[ ");
+		out.append("LLinkedList:[ ");
 		
 		Node<T> curr = start;
 		int index = 0;
@@ -335,8 +330,8 @@ public class LLinkedList<T> implements Iterable<T>, Serializable{
 
 	public boolean equals(Object that) {
 		if (that instanceof LLinkedList) {
-			ListIterator<T> thisiterator = this.iterator();
-			// Casting of that to LinkedList guaranteed.
+			ListIterator<T> thisiterator = iterator();
+			// Casting of that to LLinkedList guaranteed.
 			ListIterator<T> thatiterator = ((LLinkedList<T>) that).iterator();
 			while (thisiterator.hasNext() && thatiterator.hasNext()) {
 				if (!thisiterator.next().equals(thatiterator.next()))
@@ -385,7 +380,7 @@ public class LLinkedList<T> implements Iterable<T>, Serializable{
 	 * public void destroy() { start.next = last = focus = null; index = -1; } //
 	 * creates a new linked list starting at a certain node. If a loop is //
 	 * encountered, it will break the loop forming a linked list that way. public
-	 * LinkedList(Node<T> n) { this(); start.next = n; last = n.next; while (last !=
+	 * LLinkedList(Node<T> n) { this(); start.next = n; last = n.next; while (last !=
 	 * start.next && last.next != null) { last = last.next; } }
 	 */
 
@@ -394,7 +389,6 @@ public class LLinkedList<T> implements Iterable<T>, Serializable{
 	// ACTUALLY I KINDA DOUBT IT THIS WAS A WASTE OF MY TIME
 	// I GUESS IF YOURE NOT WRITING ITS A OKAY
 	// WAIT NO ITS GREAT JOKES
-	// TODO: MAKE DOUBLY LINKED FFS
 	private class LinkedIterator implements ListIterator<T> {
 		Node<T> curr;
 		int id;
@@ -420,20 +414,11 @@ public class LLinkedList<T> implements Iterable<T>, Serializable{
 		}
 
 		@Override
-		// delete curr, become curr.prev
-		// This code does not work whatsoever, Im not particularly sure how it got here.
-		// This functionality will not work until linked list is doubly linked.
+		//delete curr, become curr.prev
 		public void remove() {
-			Node<T> next = curr.next;
-			Node<T> prev = curr.prev;
-			curr.assume(prev);
-			curr.next = next;
-			curr.next.prev = curr;
-			if (curr.mode != Node.NODE) {
-				curr = curr.getPrev();
-			}
+			Node<T> prev = curr;
+			curr.assume(curr.prev);
 			if (prev == start) start = curr;
-			
 		}
 
 		@Override
@@ -465,7 +450,7 @@ public class LLinkedList<T> implements Iterable<T>, Serializable{
 		public String toString() {
 			StringBuilder out = new StringBuilder(5);
 			// 
-			out.append("LinkedList:[ ");
+			out.append("LLinkedList:[ ");
 			
 			Node<T> curr = start;
 			int index = 0;
@@ -512,9 +497,7 @@ public class LLinkedList<T> implements Iterable<T>, Serializable{
 
 
 }
-class Node<T> implements Serializable{
-	private static final long serialVersionUID = 1L;
-	
+class Node<T>{
 	Node<T> next = null;
 	Node<T> prev = null;
 	public byte mode = 0;
