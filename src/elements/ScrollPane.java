@@ -43,7 +43,20 @@ public class ScrollPane extends Container implements ScrollListener, KeyListener
 		ScrollEvents.add(this);
 		KeyEvents.add(this);
 		setBackgroundColor(p3.color(200,200,200));
-	
+	}
+	public ScrollPane(float x, float y, byte mode, Container p, Element ... children) {
+		super(x,y,p,children);
+		this.mode = mode;
+		panewidth = w;
+		paneheight = h;
+		
+		scrollspeed = DEFAULT_SCROLL_SPEED;
+		ScrollEvents.add(this);
+		KeyEvents.add(this);
+		setBackgroundColor(p3.color(200,200,200));
+	}
+	public ScrollPane(byte mode, Container p, Element ... children) {
+		this(0,0,mode,p,children);
 	}
 	
 	// If scroll for direction is deactivated, it will simply be cut off.

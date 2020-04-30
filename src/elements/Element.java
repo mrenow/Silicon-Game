@@ -3,6 +3,8 @@ package elements;
 import processing.core.PVector;
 import processing.core.PGraphics;
 import static core.MainProgram.*;
+import static processing.core.PApplet.max;
+import static processing.core.PApplet.min;
 import static util.DB.*;
 
 import events.Events;
@@ -57,12 +59,6 @@ public abstract class Element {
 	
 	protected PGraphics g;
 	
-	/*
-	 *  VERY HACKY BECAUSE I DONT WANT TO REWORK **LITERALLY** EVERYTHING
-	 *  Provides concurrency optimization.
-	 *  Upon requestUpdate(), class contents are copied to the buffer (How pratical is this exactly?)
-	 */
-	
 	
 	// Indidcates whether the element has been destroyed
 	protected boolean exists = true;
@@ -86,7 +82,7 @@ public abstract class Element {
 		this.w = w;
 		this.h = h;
 		
-		
+		DB_U(this, " created in ", p);
 		resetGraphics();
 		if (p != null) {
 			p.add(this);
@@ -149,6 +145,11 @@ public abstract class Element {
 	// draws onto its parent's graphics
 	protected void draw() {
 		checkUpdates();
+		if(debug == 3) {
+			pg().noFill();
+			pg().stroke(255,0,0,70);
+			pg().rect(pos.x,pos.y, getWidth(), getHeight());
+		}
 		// saves current transformation context, applies transform and draws, then
 		// restores previous transformation context.
 		pg().pushMatrix();
@@ -188,10 +189,11 @@ public abstract class Element {
 
 	public void setVisibility(boolean b) {
 		visible = b;
-		requestUpdate();
+		// no need to update current element
+		parent.requestUpdate();
 	}
 
-	public boolean getVisibility() {
+	public boolean isVisible() {
 		return visible;
 	}
 
@@ -216,7 +218,39 @@ public abstract class Element {
 		if(h<0) return parent.getHeight()+h;
 		return h;
 	}
+	
+	/*
+	 * Get minimum viable size of the component
+	 * For containers, this would be the extent of their children
+	 * For a text element, it would be the text dimensions.
+	 * By default however, this is just the element's current size.
+	 */
+	public PVector getExtent() {
+		return new PVector(getWidth(), getHeight());
+	}
 
+	public void expandFit() {
+		PVector extent = getExtent();
+		w = max(extent.x, w);
+		h = max(extent.y, h);
+	}
+	/*
+	 * Shrinks to exactly accomodate extent (In positive direction only)
+	 */
+	public void shrinkFit() {
+		PVector extent = getExtent();
+		w = min(extent.x, w);
+		h = min(extent.y, h);
+	}
+	/*
+	 * Sets size to exactly accomodate extent (In positive direction only)
+	 */
+	public void tightFit() {
+		PVector extent = getExtent();
+		w = extent.x;
+		h = extent.y;
+	}
+	
 	public PVector getPos() {
 		return new PVector(pos.x, pos.y);
 	}

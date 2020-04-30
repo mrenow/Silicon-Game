@@ -3,6 +3,7 @@ package game;
 import static core.MainProgram.*;
 import static util.DB.*;
 import util.LLinkedList;
+import util.Pair;
 import elements.Container;
 import elements.ScrollPane;
 
@@ -13,13 +14,19 @@ public class DataDisplay extends ScrollPane{
 
 	final static int MAX_SCOPES = 20;
 	private int numscopes = 0;
-	public LLinkedList<Oscilloscope> scopes;
-	public DataDisplay(float x, float y, float w, float h, Container p) {
-		this(x, y, w, h, p, new LLinkedList<Oscilloscope>());
-	}
-	public DataDisplay(float x, float y, float w, float h, Container p, LLinkedList<Oscilloscope> loaded_scopes) {
+	public LLinkedList<Oscilloscope> scopes = new LLinkedList<Oscilloscope>();
+	public DataDisplay(float x, float y, float w, float h, Container p, GameArea g) {
 		super(x, y, w, h, ScrollPane.SCROLL_Y, p);
-		scopes = loaded_scopes;
+		game = g;
+		g.display = this;
+	}
+	public DataDisplay(float x, float y, float w, float h, Container p, GameArea g, LLinkedList<Pair<Integer, Integer>> loaded_scopes) {
+		super(x, y, w, h, ScrollPane.SCROLL_Y, p);
+		game = g;
+		g.display = this;
+		for (Pair<Integer, Integer> pos : loaded_scopes) {
+			addScope(pos.val1, pos.val2);
+		}
 	}
 	
 	public void addScope(int x, int y) {

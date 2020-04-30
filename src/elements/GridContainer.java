@@ -9,6 +9,9 @@ public class GridContainer extends Container {
 	float boxh;
 	int columns;
 
+	/*
+	 * Warning: Overrides child positioning.
+	 */
 	public GridContainer(float x, float y, float w, float h, float boxw, float boxh, Container p) {
 		super(x, y, w, h, p);
 		this.boxw = boxw;

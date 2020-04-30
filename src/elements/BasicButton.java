@@ -17,10 +17,10 @@ public class BasicButton extends AbstractButton {
 	/*
 	 * int fillinactive; int strokeinactive;
 	 */
-	private int strokehover;
-	private int fillpressed;
-	private int stroke;
-	private int fill;
+	protected int strokehover;
+	protected int fillpressed;
+	protected int stroke;
+	protected int fill;
 	
 	TextBox textbox;
 

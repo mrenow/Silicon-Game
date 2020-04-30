@@ -28,8 +28,8 @@ public class Oscilloscope extends Element implements Serializable{
 	
 	//monitor
 	public WireSegment probe;
-	int x;
-	int y;	
+	public int x;
+	public int y;	
 	private float datawidth;
 	
 	// Stop request
@@ -137,9 +137,12 @@ public class Oscilloscope extends Element implements Serializable{
 		@Override
 		public boolean condition() {
 			if(!exists) return false;
-			if(requeststop || !game.running) {
-				reset();
+			if(!game.running) {
 				requeststop = false;
+				return false;
+			}
+			if(requeststop) {
+				reset();
 				return false;
 			}
 			return true;

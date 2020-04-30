@@ -34,7 +34,7 @@ public class MultiPage extends Container {
 			@Override
 			public void elementClicked() {
 				prevPage();
-				DB_A(parent, "index", index);
+				DB_A(getParent(), "index", index);
 			}
 
 			@Override

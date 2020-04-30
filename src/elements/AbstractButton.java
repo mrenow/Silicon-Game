@@ -10,10 +10,18 @@ import events.ClickListener;
 public abstract class AbstractButton extends Container implements ClickListener{
 	
 	protected boolean enabled = true;
-	boolean pressed = false;
+	public boolean pressed = false;
 	
 	protected AbstractButton(float x, float y, float w, float h, Container parent){
 		super(x,y,w,h,parent);
+		ClickEvents.add(this);
+	}
+	protected AbstractButton(float x, float y, Container parent, Element ...children){
+		super(x,y, parent, children);
+		ClickEvents.add(this);
+	}
+	protected AbstractButton(Container parent, Element ...children){
+		super(parent, children);
 		ClickEvents.add(this);
 	}
 	
@@ -21,6 +29,7 @@ public abstract class AbstractButton extends Container implements ClickListener{
 		if(enabled != val) {
 			if(enabled) {
 				if(pressed) {
+					// Release if button becomes disabled
 					elementReleased();
 				}
 				buttonDisabled();				

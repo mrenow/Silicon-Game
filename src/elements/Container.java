@@ -3,6 +3,8 @@ package elements;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import processing.core.PVector;
+
 import static core.MainProgram.*;
 import static util.DB.*;
 
@@ -22,6 +24,15 @@ public class Container extends Element {
 
 	public Container(float x, float y, Container p, Element ... children) {
 		super(x, y, 0, 0, p); // Height and width to be decided once children are added.
+		this.children = new ArrayList<Element>(Arrays.asList(children));
+		for (Element e: children) {
+			e.setParent(this);
+		}
+		tightFit();
+	}
+
+	public Container(Container p, Element ... children) {
+		super(0, 0, 0, 0, p); // Height and width to be decided once children are added.
 		this.children = new ArrayList<Element>(Arrays.asList(children));
 		for (Element e: children) {
 			e.setParent(this);
@@ -59,11 +70,11 @@ public class Container extends Element {
 	}
 
 	// first element behind, last element in front
-	void drawChildren() {
+	protected void drawChildren() {
 		for (Element e : new ArrayList<Element>(children)) {
 			// some components are spacer components, they are null and exist to gain more
 			// control over depth
-			if (e != null && isInParent(e)) {
+			if (e != null && isInParent(e) && e.visible) {
 				e.draw();
 			}
 		}
@@ -91,6 +102,7 @@ public class Container extends Element {
 	public void add(Element object) {
 		object.setParent(this);
 		children.add(object);
+		requestUpdate();
 	}
 
 	// use is discouraged due to the very dynamic nature of the children array
@@ -118,7 +130,6 @@ public class Container extends Element {
 	public void remove(Element object) {
 
 		DB_A(this, "removed", object);
-		object.parent = null;
 
 		if (children.remove(object)) {
 			DB_A("success");
@@ -152,41 +163,18 @@ public class Container extends Element {
 	public Element getChild(int i) {
 		return children.get(i);
 	}
-	/*
-	 * Increases size of container (In positive direction only) so
-	 * that all children elements can be seen.
-	 */
-	public float getExtentX() {
+	
+	@Override
+	public PVector getExtent() {
 		float maxx = 0;
-		for (Element e : children) {
-			maxx = max(maxx, e.pos.y + e.h); 	
-		}
-		return maxx;
-	}
-	public float getExtentY() {
 		float maxy = 0;
 		for (Element e : children) {
 			maxy = max(maxy, e.pos.y + e.h); 	
 		}
-		return maxy;
-	}
-	public void expandFit() {
-		w = max(getExtentX(), w);
-		h = max(getExtentY(), h);
-	}
-	/*
-	 * Shrinks to exactly accomodate children (In positive direction only)
-	 */
-	public void shrinkFit() {
-		w = min(getExtentX(), w);
-		h = min(getExtentY(), h);
-	}
-	/*
-	 * Sets size to exactly accomodate children (In positive direction only)
-	 */
-	public void tightFit() {
-		w = getExtentX();
-		h = getExtentY();
+		for (Element e : children) {
+			maxx = max(maxx, e.pos.x + e.w); 	
+		}
+		return new PVector(maxx, maxy);
 	}
 	
 	public int size() {

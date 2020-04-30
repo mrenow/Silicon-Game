@@ -7,7 +7,7 @@ import static util.DB.*;
 import util.DB;
 
 public class DB {
-	public static int debug = 3;
+	public static int debug = 0;
 
 	public static void DB_U(Object... message) {
 
@@ -68,7 +68,7 @@ public class DB {
 		print(b);
 		println(" @ ");
 		StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-		// skip first two and last 4 prints
+		// skip first two and last 4 prints as they will always be the same
 		for (int i = BEGIN_PRINTS; i < trace.length - END_PRINTS; i++) {
 			println(trace[i]);
 		}

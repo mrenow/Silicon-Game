@@ -3,6 +3,7 @@ import static core.MainProgram.*;
 import static util.DB.*;
 import elements.Container;
 import elements.MapNavigator;
+import elements.MessageOverlay;
 import events.ClickEvents;
 import events.ClickListener;
 import events.KeyEvents;
@@ -12,6 +13,7 @@ import events.MovementListener;
 import events.ScrollEvents;
 import events.ScrollListener;
 import processing.core.PVector;
+
 import util.DB;
 import util.LLinkedList;
 import util.SparseQuadTree;
@@ -21,7 +23,6 @@ import java.util.ListIterator;
 import async.ActiveAsyncEvent;
 import async.AsyncEvent;
 import async.Scheduler;
-
 /* Contains the building grid
  * An x,y scrollable and zoomable pane which will have a set size. 
  * Does not reside in a scroll pane due to the need for drawing optimizations.
@@ -38,7 +39,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	final static int VK_METAL   = KeyEvents.VK_CONTROL;
 	final static int VK_VIA     = KeyEvents.VK_SPACE;
 	
-	
 	// ctrl + commands
 	final static int VK_CTRL_UNDO  = KeyEvents.VK_Z;
 	final static int VK_CTRL_REDO  = KeyEvents.VK_Y;
@@ -52,15 +52,23 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	final static int VK_EDIT_FLIP = KeyEvents.VK_SLASH;
 	final static int VK_EDIT_DELETE = KeyEvents.VK_DELETE;
 
-	
-	
-	
 	final static byte MAKE_SILICON = 0;
 	final static byte MAKE_METAL   = 1;
 	final static byte MAKE_VIA     = 2;
 	final static byte MAKE_POWER   = 3;
 	final static byte EDIT         = 4;
 	final static byte MAKE_SCOPE   = 5;
+
+	final static int N_TYPE_INACTIVE_COLOR = p3.color(50,0,0);
+	final static int P_TYPE_INACTIVE_COLOR = p3.color(100,100,0);
+	final static int N_TYPE_ACTIVE_COLOR = p3.color(140,0,0);
+	final static int P_TYPE_ACTIVE_COLOR = p3.color(220,220,0);
+	final static int METAL_INACTIVE_COLOR = p3.color(100, 100, 100, 160);
+	final static int METAL_ACTIVE_COLOR = p3.color(255,255,255,140);
+	final static int METAL_ACCENT_COLOR = p3.color(200,200,200,70);
+	final static int SCOPE_COLOR = p3.color(0,144,0,70);
+	final static int SCOPE_TEXT_COLOR = p3.color(0,200,33);
+	
 	
 	
 	
@@ -80,11 +88,12 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 	public DataDisplay display;
 
-
-	public GameArea(float x, float y, float w, float h, int size, Container p, SparseQuadTree<WireSegment> load_tiles) {
+	public MessageOverlay messageoverlay;
+	
+	public GameArea(float x, float y, float w, float h, int size, Container p, LLinkedList<WireSegment> load_tiles) {
 		super(x, y, w, h, p);
-		
-		tiles = load_tiles;
+
+		tiles = new SparseQuadTree<WireSegment>(size);
 		dimx = dimy = 1 << size;
 		offset = new PVector(dimx / 2, dimy / 2);
 		backgroundcolor = p3.color(230, 230, 230);
@@ -95,9 +104,17 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		WireSegment.container = tiles;
 		WireSegment.potentialdisconnects.clear();
-
+			
+		// Borrowing functionality kthx
+		clipboard = load_tiles;
+		if(clipboard != null) {
+			paste(0,0);
+			clipboard = null;
+		}
 		setZoomBounds(1, 100);
 		setOffsetBounds(-500, -500, 800, 800);
+		
+		messageoverlay = new MessageOverlay(this);
 
 		// Add listeners
 		KeyEvents.add(this);
@@ -109,15 +126,11 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		setSpeed(10);
 	}
 	public GameArea(float x, float y, float w, float h, int size, Container p) {
-		this(x, y, w, h, size, p, new SparseQuadTree<WireSegment>(size));
+		this(x, y, w, h, size, p, null);
 	}
-	public void setDisplay(DataDisplay display) {
-		this.display = display; 
-		this.display.game = this;
-	}
-	
+	@Override
 	protected void update() {
-		super.update();
+		resetGraphics();
 		
 		LLinkedList<WireSegment> objects = new LLinkedList<WireSegment>(tiles.get(floor(offset.x),
 				floor(offset.y), ceil(offset.x + getWidth() / zoom), ceil(offset.y + getHeight() / zoom))); 
@@ -131,16 +144,25 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		g.rect(0, 0, dimx, dimy);
 		
 		drawObjects(objects);
+		drawScopes();
 		g.popMatrix();
 		
-		if(!running) {
-			drawPreview();
+		drawPreview();
+		
+		if(canedit) {
 			drawSelection();
+			if(ispasting) {
+				drawClipboard();
+			}
 		}
+		
 		 
 		// debug overlay indication direction of WireSegment chain
 		// debug overlay for grid
 		if(db) drawDebug();
+	
+	
+		drawChildren();
 	}
 	
 	private void drawObjects(LLinkedList<WireSegment> objects) {
@@ -158,8 +180,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		LLinkedList<Gate> gates = new LLinkedList<Gate>();
 
 		g.noStroke();
-		
-		g.fill(50, 0, 0);
+		// inactive N silicon
+		g.fill(N_TYPE_INACTIVE_COLOR);
 		while (witer.hasNext()) {
 			w = witer.next();
 			if (w.mode == WireSegment.N_TYPE || w.mode == WireSegment.N_GATE) {
@@ -175,8 +197,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			}
 		}
 
-		
-		g.fill(140,0,0);
+		// Active N silicon
+		g.fill(N_TYPE_ACTIVE_COLOR);
 		for (WireSegment w1: active) {
 			g.rect(w1.x, w1.y, 1, 1);
 		}
@@ -184,7 +206,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		//active gates
 		giter = gates.iterator();
-		g.fill(220,220,0);
+		g.fill(P_TYPE_ACTIVE_COLOR);
 		while(giter.hasNext()) {
 			g1 = giter.next();
 			if(g1.powered()) {
@@ -196,7 +218,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		
 		// inactive gates
-		g.fill(100,100,0);
+		g.fill(P_TYPE_INACTIVE_COLOR);
 		for (Gate g2: gates) {
 			g.rect(g2.x + 0.1f,g2.y+0.1f,0.8f,0.8f);
 		}
@@ -205,7 +227,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		// Draw P silicon
 		witer = objects.iterator();
-		g.fill(100, 100, 0);
 		while (witer.hasNext()) {
 			w = witer.next();
 			if (w.mode == WireSegment.P_TYPE || w.mode == WireSegment.P_GATE) {
@@ -221,7 +242,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			}
 		}
 		
-		g.fill(220,220,0);
+		// Active Psilicon
+		g.fill(P_TYPE_ACTIVE_COLOR);
 		for (WireSegment w1: active) {
 			g.rect(w1.x, w1.y, 1, 1);
 		}
@@ -231,7 +253,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		//active gates
 		giter = gates.iterator();
-		g.fill(140,0,0);
+		g.fill(N_TYPE_ACTIVE_COLOR);
 		while(giter.hasNext()) {
 			g1 = giter.next();
 			if(g1.powered()) {
@@ -240,7 +262,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			}
 		}
 		// inactive gates
-		g.fill(50,0,0);
+		g.fill(N_TYPE_INACTIVE_COLOR);
 		for (Gate g2: gates) {
 			g.rect(g2.x + 0.1f,g2.y+0.1f,0.8f,0.8f);
 		}
@@ -248,7 +270,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		// Draw metal
 		witer = objects.iterator();
-		g.fill(100, 100, 100, 140);
+		g.fill(METAL_INACTIVE_COLOR);
 		while (witer.hasNext()) {
 			w = witer.next();
 			if (w.mode == WireSegment.METAL) {
@@ -262,7 +284,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 		
 		// Active Metal
-		g.fill(255,255,255,140);
+		g.fill(METAL_ACTIVE_COLOR);
 		for(WireSegment w1 : active) {
 			g.rect(w1.x, w1.y, 1, 1);
 		}
@@ -271,10 +293,10 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 
 		
 		// Draw Power
-		g.stroke(100,100,100);
+		g.stroke(METAL_ACCENT_COLOR);
 		g.strokeWeight(0.06f);
 		witer = objects.iterator();
-		g.fill(100, 100, 100, 140);
+		g.fill(METAL_INACTIVE_COLOR);
 		while (witer.hasNext()) {
 			w = witer.next();
 			if(w.mode == WireSegment.POWER) {
@@ -289,14 +311,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			
 		}
 		// Active Power
-		g.fill(255,255,255,140);
+		g.fill(METAL_ACTIVE_COLOR);
 		for(WireSegment w1 : active) {
 			g.rect(w1.x, w1.y, 1, 1);
 		}
 		active.clear();
 		
-		//draw vias
-		g.fill(200,200,200,70);
+		//draw vias 
 		witer = objects.iterator();
 		g.noFill();
 		while (witer.hasNext()) {
@@ -306,22 +327,37 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				witer.remove();
 			}
 		}
-		
-		
+	}
+	private void drawScopes() {
 		//draw scopes
 		g.noFill();
-		g.stroke(0,144,0,70);
+		g.stroke(SCOPE_COLOR);
 		for(Oscilloscope o : display.scopes) {
 			g.rect(o.x, o.y, 1, 1);
 		}
+		/*
+		 *  Unfortunately, processing doesnt like doing things 
+		 *  in non-integer multiples, even when the whole area
+		 *  is scaled. Shame on you processing. Because of this
+		 *  we now resort to aesthetic displeasure
+		 */
 		
-		g.textSize(0.5f);
+		// First save the old context
+		g.pushMatrix();
+		// Set matrix to identity and use MapNav functions to
+		// get the text in the right location
+		g.resetMatrix();
+			
+		g.textSize(zoom/2);
 		g.textAlign(CENTER,CENTER);
-		g.fill(0,33,33);
+		g.fill(SCOPE_TEXT_COLOR);
 		for(Oscilloscope o : display.scopes) {
-		
-			g.text(o.id, o.x + 0.5f, o.y + 0.5f);
+			g.text(Integer.toString(o.id), mapToLocalX(o.x), mapToLocalY(o.y), zoom,zoom );
 		}
+		// make sure to restore context
+		g.popMatrix();
+		// hey it worked first try
+		
 		
 	}
 	
@@ -341,10 +377,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		for (WireSegment w1 : WireSegment.potentialdisconnects) {
 			g.ellipse(w1.x+0.5f, w1.y+0.5f, 0.1f,0.1f);
 		}
-		
-		
-		
-		
 		
 		// Red arrows denote gate inputs
 		for(WireSegment w1 : tiles.elements) {
@@ -468,117 +500,128 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		g.popMatrix();
 		
 	}
-	private void drawPreview() {
+	
+	private void drawClipboard() {
 		PVector mousepos = localToMapPos(localMouseX(), localMouseY());
 		int mousex = floor(mousepos.x);
 		int mousey = floor(mousepos.y);
-		if(ispasting) {
-			g.pushMatrix();
-			transformView();
-
-			//move 0,0 to mousex, mousey 
-			g.translate(mousex, mousey);
-			g.rotate(rotation*PI/2);
-			if(flipped)	g.scale(1,-1);	
-
-			switch((flipped)?((5-rotation)%4):rotation) {
-			case 0:
-				//do nothing 
-				break;
-			case 1:
-				//bottom left
-				g.translate(0,-clipboardregion.getHeight());
-				break;
-			case 2:
-				//bottom right
-				g.translate(-clipboardregion.getWidth(),-clipboardregion.getHeight());
-				break;
-			case 3:
-				//top right
-				g.translate(-clipboardregion.getWidth(),0);
-				break;
-			}
-			
-			//move startx, starty to 0,0
-			g.translate(-startx, -starty);
-			drawObjects(clipboard);
-			g.popMatrix();
-		}
 		
-
 		g.pushMatrix();
 		transformView();
-		switch(makemode) {
-		case MAKE_SILICON:
-			g.noStroke();
-			if(KeyEvents.key[VK_SILICON]) {
-				// N_TYPE
-				g.fill(140,0,0,70);
-				// if silicon at tile
-				if(tileContains(mousex, mousey, WireSegment.P_TYPE)) {
-					g.rect(mousex + 0.1f,mousey+0.1f,0.8f,0.8f);
-				}else {
-					g.rect(mousex, mousey, 1,1);
-				}
-			}else {
-				// P_TYPE
-				g.fill(220, 220, 0, 70);
-				if(tileContains(mousex, mousey, WireSegment.N_TYPE)) {
-					g.rect(mousex + 0.1f, mousey + 0.1f, 0.8f, 0.8f);
-				}else {
-					g.rect(mousex, mousey, 1,1);
-				}
-			}
-			
+
+		//move 0,0 to mousex, mousey 
+		g.translate(mousex, mousey);
+		g.rotate(rotation*PI/2);
+		if(flipped)	g.scale(1,-1);	
+		// Rotation becomes weird due to flip
+		rotation = (flipped)?((5-rotation)%4):rotation;
+		switch(rotation) {
+		case 0:
+			//do nothing 
 			break;
-		case MAKE_METAL:
-			g.noStroke();
-			g.fill(100, 100, 100, 70);
-			g.rect(mousex, mousey, 1,1);
+		case 1:
+			//bottom left
+			g.translate(0,-clipboardregion.getHeight());
 			break;
-		case MAKE_VIA:
-			g.strokeWeight(0.1f);
-			g.stroke(100,100,100,70);
-			g.noFill();
-			g.ellipse(mousex + 0.5f, mousey + 0.5f, 0.7f, 0.7f);
+		case 2:
+			//bottom right
+			g.translate(-clipboardregion.getWidth(),-clipboardregion.getHeight());
 			break;
-		case MAKE_POWER:
-			g.strokeWeight(0.1f);
-			g.fill(100, 100, 100, 70);
-			g.stroke(100,100,100,70);
-			g.rect(mousex, mousey, 1,1);
+		case 3:
+			//top right
+			g.translate(-clipboardregion.getWidth(),0);
 			break;
-		case EDIT:
-			if(selectionx != -1 &&  p3.mousePressed && p3.mouseButton == LEFT) {
-				int selectionx0 = selectionx;
-				int selectiony0 = selectiony;
-				int selectionx1 = mousex;
-				int selectiony1 = mousey;
+		}
 		
-				//ensure that selectionx1 > selectionx
-				if(selectionx1 < selectionx0) {
-					int s = selectionx0;
-					selectionx0 = selectionx1;
-					selectionx1 = s;
+		//move startx, starty to 0,0
+		g.translate(-startx, -starty);
+		drawObjects(clipboard);
+		g.popMatrix();
+	
+	}
+	
+	private void drawPreview() {
+
+		PVector mousepos = localToMapPos(localMouseX(), localMouseY());
+		int mousex = floor(mousepos.x);
+		int mousey = floor(mousepos.y);
+		if(mousex < 0 || mousex >= dimx || mousey < 0 || mousey >= dimy) return;
+		
+		g.pushMatrix();
+		transformView();
+		if(canedit) {
+			switch(makemode) {
+			case MAKE_SILICON:
+				g.noStroke();
+				if(KeyEvents.key[VK_SILICON]) {
+					// N_TYPE
+					g.fill(140,0,0,70);
+					// if silicon at tile
+					if(tileContains(mousex, mousey, WireSegment.P_TYPE)) {
+						g.rect(mousex + 0.1f,mousey+0.1f,0.8f,0.8f);
+					}else {
+						g.rect(mousex, mousey, 1,1);
+					}
+				}else {
+					// P_TYPE
+					g.fill(220, 220, 0, 70);
+					if(tileContains(mousex, mousey, WireSegment.N_TYPE)) {
+						g.rect(mousex + 0.1f, mousey + 0.1f, 0.8f, 0.8f);
+					}else {
+						g.rect(mousex, mousey, 1,1);
+					}
 				}
 				
-				//ensure that selectiony1 > selectiony
-				if(selectiony1 < selectiony) {
-					int s = selectiony0;
-					selectiony0 = selectiony1;
-					selectiony1 = s;
-				}
+				break;
+			case MAKE_METAL:
+				g.noStroke();
+				g.fill(100, 100, 100, 70);
+				g.rect(mousex, mousey, 1,1);
+				break;
+			case MAKE_VIA:
+				g.strokeWeight(0.1f);
+				g.stroke(100,100,100,70);
 				g.noFill();
-				g.stroke(0,0,0,50);
-				g.rect(selectionx0, selectiony0, selectionx1-selectionx0+1, selectiony1-selectiony0+1);
+				g.ellipse(mousex + 0.5f, mousey + 0.5f, 0.7f, 0.7f);
+				break;
+			case MAKE_POWER:
+				g.strokeWeight(0.1f);
+				g.fill(100, 100, 100, 70);
+				g.stroke(100,100,100,70);
+				g.rect(mousex, mousey, 1,1);
+				break;
+			case EDIT:
+				if(selectionx != -1 &&  p3.mousePressed && p3.mouseButton == LEFT) {
+					int selectionx0 = selectionx;
+					int selectiony0 = selectiony;
+					int selectionx1 = mousex;
+					int selectiony1 = mousey;
+			
+					//ensure that selectionx1 > selectionx
+					if(selectionx1 < selectionx0) {
+						int s = selectionx0;
+						selectionx0 = selectionx1;
+						selectionx1 = s;
+					}
+					
+					//ensure that selectiony1 > selectiony
+					if(selectiony1 < selectiony) {
+						int s = selectiony0;
+						selectiony0 = selectiony1;
+						selectiony1 = s;
+					}
+					g.noFill();
+					g.stroke(0,0,0,50);
+					g.rect(selectionx0, selectiony0, selectionx1-selectionx0+1, selectiony1-selectiony0+1);
+				}
+				break;
 			}
-			break;
-		case MAKE_SCOPE:
+		}
+		if(makemode == MAKE_SCOPE) {
 			g.strokeWeight(0.1f);
 			g.noFill();
 			g.stroke(0,144,0,70);
 			g.rect(mousex, mousey, 1,1);
-			break;
 		}
 		g.popMatrix();
 	}
@@ -588,29 +631,36 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 
 	public void keyPressed() {
-		
+		// debug
 		if(KeyEvents.key[KeyEvents.VK_D]) {
 			db = !db;
 		}
 		
 		if (KeyEvents.key[KeyEvents.VK_5]) {
 			makemode = EDIT;
+			messageoverlay.addMessage("Using Edit tool.");
 		}else if(KeyEvents.key[KeyEvents.VK_1]) {
 			discardSelection();
 			makemode = MAKE_SILICON;
+			messageoverlay.addMessage("Placing Silicon.");
 		}else if (KeyEvents.key[KeyEvents.VK_2]){
 			discardSelection();
 			makemode = MAKE_METAL;	
+			messageoverlay.addMessage("Placing Metal.");
 		}else if (KeyEvents.key[KeyEvents.VK_3]){
 			discardSelection();
 			makemode = MAKE_VIA;
+			messageoverlay.addMessage("Placing Vias.");
 		}else if (KeyEvents.key[KeyEvents.VK_4]){
 			discardSelection();
 			makemode = MAKE_POWER;
+			messageoverlay.addMessage("Placing Power Sources.");
 		}else if (KeyEvents.key[KeyEvents.VK_6]) {
 			discardSelection();
 			makemode = MAKE_SCOPE;			
+			messageoverlay.addMessage("Placing Scopes.");
 		}
+		
 	
 		if(KeyEvents.key[KeyEvents.VK_CONTROL]) {
 			// Pasting will generate a ghost overlay of the copied selection
@@ -632,13 +682,16 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 		
 		// Editing
-		if(makemode == EDIT && hasSelection()) {
-			if(KeyEvents.key[VK_EDIT_DESELECT]) {
+		if(makemode == EDIT ) {
+			if(KeyEvents.key[VK_EDIT_DESELECT])
 				ispasting = false;
-				discardSelection();
-			}else if(KeyEvents.key[VK_EDIT_DELETE]) {
-				deleteSelection();
 			}
+			if(hasSelection()) {
+				if(KeyEvents.key[VK_EDIT_DESELECT]) {
+					discardSelection();
+				}else if(KeyEvents.key[VK_EDIT_DELETE]) {
+					deleteSelection();
+				}
 		}
 		//rotate
 		if(KeyEvents.key[VK_EDIT_ROTATE]) {
@@ -815,13 +868,10 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 	
 		
-		if(!running) {
+		if(canedit && makemode != MAKE_SCOPE) {
 			if (p3.mouseButton == RIGHT) {
-				if(makemode == MAKE_SCOPE) {
-					deleteScope(x,y);
-				}else {
-					delete(x,y);
-				}
+				delete(x,y);
+				
 			} else if (p3.mouseButton == LEFT){
 				switch(makemode) {
 					case MAKE_VIA:
@@ -857,12 +907,16 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 							
 						}
 						break;
-					case MAKE_SCOPE: 
-						if(!hasScope(x,y)) {
-							makeScope(x,y);
-						}
-						break;
 				}
+			}
+		}
+		if(makemode == MAKE_SCOPE) {
+			if(p3.mouseButton == RIGHT) {
+				deleteScope(x,y);
+			}else if(p3.mouseButton == LEFT) {
+				if(!hasScope(x,y)) {
+					makeScope(x,y);
+				}	
 			}
 		}
 		requestUpdate();
@@ -966,6 +1020,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	public boolean hasScope(int x, int y) {
 		return scopeAt(x,y) != null;
 	}
+	
+	
 	public Oscilloscope scopeAt(int x, int y) {
 		for (Oscilloscope o : display.scopes) {
 			if(o.x == x && o.y == y) {
@@ -1082,6 +1138,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	boolean iscopying = false;
 	int startx;
 	int starty;
+	
+	boolean canedit = true;
 	
 	public boolean hasSelection() {
 		return region != null;
@@ -1206,6 +1264,11 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 	// make new process
 	public void run() {
+		if(canedit == true) {
+			messageoverlay.addMessage("Run mode.");
+			canedit = false;
+			
+		}
 		rectifyMap();
 		display.updateProbes();
 		if(!running) {
@@ -1244,8 +1307,10 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 		// Destroy thread
 		stop();
+		// Run once so that are updated appropriately
 		tickscheduler.call(new RunIterate());
-		
+		canedit = true;
+		messageoverlay.addMessage("Build mode.");
 	}
 	
 	
@@ -1285,11 +1350,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			iterate();
 		}
 		protected void start() {
+			messageoverlay.addMessage("Simulation started.");
 			running = true;
 			DB_U("TickThread started");
 		}
 		protected void stop() {
 			// Stop may be requested once thread runs again.
+			messageoverlay.addMessage("Simulation stopped.");
 			stoppable = false;
 			running = false;
 			DB_U("TickThread stopped");

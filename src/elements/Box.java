@@ -3,7 +3,8 @@ package elements;
 import static core.MainProgram.*;
 import static util.DB.*;
 
-//A plain rectangle
+// A plain rectangle
+// We all gotta start somewhere
 
 public class Box extends Element {
 

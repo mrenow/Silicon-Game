@@ -13,6 +13,20 @@
  * - Added more splash screen text
  * 1.2
  * - Projects can now be saved with ctrl-s
+ * - Fixed bug visual bug with paste preview and oscilloscopes
+ * - Fixed bug where escape was not escaping paste mode all of the time.
+ * - Graphical change to oscilloscopes
+ * - + Added more convenient constructors
+ * - + Message log to show component changes and any actions
+ * - + Pause button which pauses oscilloscope output
+ * - + Oscilloscopes can now be placed and removed while simulating
+ * - + Performed ritual to ward off crashes
+ * - + Minor refactoring but oh yikes theres a lot left
+ * 1.2 Engine changes:
+ * - Non-visible components no longer listen for hover updates.
+ * - + Added ToggleButton, and a number of Effects.
+ * - + Added MessageOverlay
+ * - + Added Pair structure
  * 
  * Current Bugs:
  *  - Highly connected wires tend to create infinite update loops 
@@ -58,7 +72,7 @@ public class MainProgram extends PApplet {
 		p3 = this;
 		Images.init();
 		globalscheduler.start();
-		LEVEL = new TestScreen();
+		LEVEL = new MenuScreen();
 		
 		//Ensure main data structures are in working condition.
 		if(debug > 0) {
@@ -88,8 +102,10 @@ public class MainProgram extends PApplet {
 		
 		// draw debug overlay
 		if(debug >=2) {
-			text(String.format("Draw: %dms",drawtime),10,10);
-			text(String.format("Event: %dms",eventtime),10,40);
+			int height = 10;
+			text(String.format("Draw: %dms",drawtime),10,height);
+			text(String.format("Event: %dms",eventtime),10,height += 30);
+			
 		}
 	}
 	
@@ -159,10 +175,7 @@ class TestScreen extends Screen implements MovementListener{
 		
 		
 		game = new GameArea(0,0,1200,600,6,this);
-		display = new DataDisplay(0,600,1200,200,this);
-		game.setDisplay(display);
-		
-		
+
 		
 		
 

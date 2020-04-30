@@ -33,7 +33,7 @@ public class HoverEvents {
 
 	static boolean cursorWithinBounds(Element e) {
 		// if the element is not attached to a screen, do not listen for cursor events
-		if (!e.isConcrete())
+		if (!e.isConcrete() || !e.isVisible())
 			return false;
 		PVector pos = e.getGlobalPos();
 		return (p3.mouseX >= pos.x && p3.mouseX <= e.getWidth() + pos.x)

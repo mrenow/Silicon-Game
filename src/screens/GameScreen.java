@@ -11,12 +11,14 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import core.Images;
+import effects.FadeContainer;
 import elements.BasicButton;
 import elements.Container;
 import elements.ImageButton;
 import elements.Screen;
 import elements.ScrollPane;
 import elements.Text;
+import elements.ToggleButton;
 import events.KeyListener;
 import events.KeyEvents;
 import events.Saveable;
@@ -24,9 +26,13 @@ import game.DataDisplay;
 import game.GameArea;
 import game.Oscilloscope;
 import game.WireSegment;
+import game.Power;
+import processing.core.PConstants;
 import processing.core.PImage;
+import processing.core.PVector;
 import shapes_unused.Arrow;
 import util.LLinkedList;
+import util.Pair;
 import util.SparseQuadTree;
 import static util.DB.*;
 
@@ -44,16 +50,18 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 	
 	BasicButton startbutton,stopbutton;
 	
-	BasicButton scopepausebutton;
+	ToggleButton pausebutton;
 	
 	ImageButton backbutton;
+	
+	Text modetext;
 	
 	String name;
 	
 	public GameScreen(String name, int depth) {
 		super();
 		KeyEvents.add(this);
-
+		
 		this.name = name;
 		// Try load from file
 		
@@ -62,13 +70,16 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 		try {
 			println("Trying to load from " + location);
 			oistream = new ObjectInputStream(new FileInputStream(location));
-			game = new GameArea(0, 50, 1200, 500, depth, this, (SparseQuadTree<WireSegment>)oistream.readObject());
-			display = new DataDisplay(0, 550, 1200, 300, this, (LLinkedList<Oscilloscope>)oistream.readObject());
-		}catch(IOException | ClassNotFoundException e) {
+			Object res1 = oistream.readObject();
+			Object res2 = oistream.readObject();
+			
+			game = new GameArea(0, 50, 1200, 500, depth, this, (LLinkedList<WireSegment>)res1);
+			display = new DataDisplay(0, 550, 1200, 300, this, game, (LLinkedList<Pair<Integer, Integer>>)res2);
+		}catch(IOException | ClassNotFoundException | ClassCastException e) {
+			println(e.getMessage());
 			println("File not found | Corrupted data. Welp new slate then.");
 			game = new GameArea(0, 50, 1200, 500, depth, this);
-			display = new DataDisplay(0, 550, 1200, 300, this);	
-			
+			display = new DataDisplay(0, 550, 1200, 300, this, game);	
 		} finally {
 			try {
 				if(oistream != null) {
@@ -80,9 +91,10 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 				System.exit(1);
 			}
 		}
-		
-		game.setDisplay(display);
-		startbutton = new BasicButton(getWidth()-220, 0, 100, 50, "Run", this) {
+		int buttonwidth = 100;
+		int spacing = 10;
+		int offset = 0;
+		startbutton = new BasicButton(getWidth()-(offset+=spacing + buttonwidth), 0, buttonwidth, 50, "Run", this) {
 			@Override
 			public void elementClicked(){
 				
@@ -91,16 +103,19 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 					game.run();
 					startbutton.setEnabled(false);
 					stopbutton.setEnabled(true);
+					pausebutton.setVisibility(true);
+					modetext.setText("Simulate Mode");
 				}
 			}
 		};
 		
-		startbutton.setFill(p3.color(100,170,120));
-		startbutton.setFillPressed(p3.color(170,240,190));
-		startbutton.setStroke(p3.color(50,150,50));
-		startbutton.setStrokeHovered(p3.color(170,240,190));
 		
-		stopbutton = new BasicButton(getWidth()- 110, 0, 100, 50, "Stop", this) {
+		startbutton.setFill(p3.color(4, 94, 22));
+		startbutton.setFillPressed(p3.color(89, 240, 119));
+		startbutton.setStroke(p3.color(4, 94, 22));
+		startbutton.setStrokeHovered(p3.color(89, 240, 119));
+		
+		stopbutton = new BasicButton(getWidth()- (offset+=spacing + buttonwidth), 0, buttonwidth, 50, "Stop", this) {
 			@Override
 			public void elementClicked(){
 				if(enabled) {
@@ -108,15 +123,42 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 					game.reset();
 					stopbutton.setEnabled(false);
 					startbutton.setEnabled(true);
+					pausebutton.setVisibility(false);
+					modetext.setText("Build Mode");
 				}
 			}
 		};
 		
 		stopbutton.setFillPressed(p3.color(255,160,160));
-		stopbutton.setStroke(p3.color(100,10,0));
+		stopbutton.setStroke(p3.color(190,70,70));
 		stopbutton.setStrokeHovered(p3.color(255,160,160));
 		stopbutton.setFill(p3.color(190,70,70));
 		stopbutton.setEnabled(false);
+		
+		pausebutton = new ToggleButton(getWidth()- (offset+=spacing + buttonwidth), 0, buttonwidth, 50, "Pause", this) {
+			@Override
+			public void elementClicked(){
+				super.elementClicked();
+				if(pressed) {
+					game.stop();
+				}else {
+					game.run();
+				}
+			}
+		};
+		
+		pausebutton.setFillPressed(p3.color(255, 210, 140));
+		pausebutton.setStroke(p3.color(145, 113, 49));
+		pausebutton.setStrokeHovered(p3.color(255,160,160));
+		pausebutton.setFill(p3.color(145, 113, 49));
+		pausebutton.setVisibility(false);
+		
+		modetext = new Text(0, 0, 0, 50, "Simulate Mode",this);
+		
+		modetext.expandFit();
+		modetext.setPos(modetext.getWidth() + offset + spacing, modetext.pos.y);
+		modetext.setAlign(CENTER, CENTER);
+		modetext.setText("BuildMode");
 		
 		backbutton = new ImageButton(0,0,100,50,Images.BACK_ARROW, this) {
 			public void elementClicked() {
@@ -139,13 +181,23 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 		
 		
 	}
-
+	/*
+	 *  Okay... so maybeee this should be in gameArea.
+	 *  But my goodness, look at the thing
+	 *  it has 1500 lines
+	 *  give it a break
+	 */
 	@Override
 	public boolean saveState() {
 		try {
 			ObjectOutputStream oostream = new ObjectOutputStream(new FileOutputStream("data/level_" + name + ".bin"));
-			oostream.writeObject(game.tiles);
-			oostream.writeObject(game.display.scopes);
+			oostream.writeObject(game.tiles.elements);
+			// pack up scopes
+			LLinkedList<Pair<Integer, Integer>> scopes = new LLinkedList<Pair<Integer, Integer>>();
+			for (Oscilloscope o : game.display.scopes) {
+				scopes.add(new Pair<Integer, Integer>(o.x, o.y));
+			}
+			oostream.writeObject(scopes);
 			oostream.close();
 			return true;
 		}catch(IOException e) {
@@ -159,7 +211,12 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 	public void keyPressed() {
 		if(KeyEvents.key[KeyEvents.VK_S] && KeyEvents.key[KeyEvents.VK_CONTROL]) {
 			DB_A("GameScreen Save");
-			if(saveState());
+			if(saveState()) {
+				game.messageoverlay.addMessage("Saved successfully.");
+			}else {
+				game.messageoverlay.addMessage("Save failed.");
+			}
+			
 		}
 	}
 	

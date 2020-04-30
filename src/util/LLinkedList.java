@@ -3,6 +3,7 @@ package util;
 import static core.MainProgram.*;
 import static util.DB.*;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.ListIterator;
 
@@ -12,8 +13,9 @@ import game.Gate;
  * An empty linked list contains one node, the start node. The payload is null.
  * Also, welcome to Pointer Hell. Is it your first time here?
  */
-public class LLinkedList<T> implements Iterable<T> {
+public class LLinkedList<T> implements Iterable<T> , Serializable{
 
+	private static final long serialVersionUID = 1L;
 	// only to be referenced by internal functions.
 	protected Node<T> start;
 	protected Node<T> end;
@@ -497,7 +499,8 @@ public class LLinkedList<T> implements Iterable<T> {
 
 
 }
-class Node<T>{
+class Node<T> implements Serializable{
+	private static final long serialVersionUID = 1L;
 	Node<T> next = null;
 	Node<T> prev = null;
 	public byte mode = 0;
