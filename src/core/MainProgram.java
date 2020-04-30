@@ -29,6 +29,7 @@ import game.*;
 import elements.*;
 import util.*;
 import async.*;
+import effects.FadeContainer;
 import screens.*;
 import shapes_unused.*;
 import tests.*;
@@ -57,10 +58,10 @@ public class MainProgram extends PApplet {
 		p3 = this;
 		Images.init();
 		globalscheduler.start();
-		LEVEL = new MenuScreen();
+		LEVEL = new TestScreen();
 		
 		//Ensure main data structures are in working condition.
-		if(debug > 0) {
+		if(debug > 44) {
 			globalscheduler.testScheduler();
 			UnitTests.heapTest();
 			UnitTests.linkedListTest();
@@ -162,6 +163,8 @@ class TestScreen extends Screen implements MovementListener{
 		game.setDisplay(display);
 		
 		
+		
+		
 
 		startbutton = new BasicButton(0, 650, 100, 100, "Run", this) {
 			@Override
@@ -181,9 +184,10 @@ class TestScreen extends Screen implements MovementListener{
 		}; 
 		stopbutton.setEnabled(false);
 		
-		//new ImageButton(100, 100, 100, 100, p3.loadImage("NavArrow.bmp"), this);
-		//b = new Mandelbrot(0, 0, getWidth(), getHeight(), this);
+		// new ImageButton(100, 100, 100, 100, p3.loadImage("NavArrow.bmp"), this);
+		// b = new Mandelbrot(0, 0, getWidth(), getHeight(), this);
 		c = new Text(10,10,400,80,"Location:",this);
+		new FadeContainer(500,500, 100, this, new Text(0, 0, 400, 100, "HELLO EAR EE e wweqwer", null));
 		
 	}
 

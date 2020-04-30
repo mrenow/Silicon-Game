@@ -1,6 +1,8 @@
 package elements;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+
 import static core.MainProgram.*;
 import static util.DB.*;
 
@@ -15,8 +17,18 @@ public class Container extends Element {
 	public Container(float x, float y, float w, float h, Container p) {
 		super(x, y, w, h, p);
 		children = new ArrayList<Element>();
+		
 	}
 
+	public Container(float x, float y, Container p, Element ... children) {
+		super(x, y, 0, 0, p); // Height and width to be decided once children are added.
+		this.children = new ArrayList<Element>(Arrays.asList(children));
+		for (Element e: children) {
+			e.setParent(this);
+		}
+		tightFit();
+	}
+	
 	@Override
 	protected
 	void destroyListeners() {
@@ -50,14 +62,19 @@ public class Container extends Element {
 	void drawChildren() {
 		for (Element e : new ArrayList<Element>(children)) {
 			// some components are spacer components, they are null and exist to gain more
-			// control over d6epth
+			// control over depth
 			if (e != null && isInParent(e)) {
 				e.draw();
 			}
 		}
 	}
-	// Checks if component's drawing pane is visible within the parent.
-	// does not account for transformations so must be overridden.
+	
+	/* Checks if component's drawing pane is visible within the parent.
+	 * does not account for transformations. To solve this we
+	 * can write Element.boundingBox() and use that instead.
+	 * That would be a function of the transformation.
+	 */ 
+
 	public boolean isInParent(Element e) {
 		if (e.getPos().x > getWidth() || e.getPos().y > getHeight()) {
 			return false;
@@ -135,7 +152,43 @@ public class Container extends Element {
 	public Element getChild(int i) {
 		return children.get(i);
 	}
-
+	/*
+	 * Increases size of container (In positive direction only) so
+	 * that all children elements can be seen.
+	 */
+	public float getExtentX() {
+		float maxx = 0;
+		for (Element e : children) {
+			maxx = max(maxx, e.pos.y + e.h); 	
+		}
+		return maxx;
+	}
+	public float getExtentY() {
+		float maxy = 0;
+		for (Element e : children) {
+			maxy = max(maxy, e.pos.y + e.h); 	
+		}
+		return maxy;
+	}
+	public void expandFit() {
+		w = max(getExtentX(), w);
+		h = max(getExtentY(), h);
+	}
+	/*
+	 * Shrinks to exactly accomodate children (In positive direction only)
+	 */
+	public void shrinkFit() {
+		w = min(getExtentX(), w);
+		h = min(getExtentY(), h);
+	}
+	/*
+	 * Sets size to exactly accomodate children (In positive direction only)
+	 */
+	public void tightFit() {
+		w = getExtentX();
+		h = getExtentY();
+	}
+	
 	public int size() {
 		return children.size();
 	}

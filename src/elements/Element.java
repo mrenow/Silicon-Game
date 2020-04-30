@@ -1,7 +1,6 @@
 package elements;
 
 import processing.core.PVector;
-
 import processing.core.PGraphics;
 import static core.MainProgram.*;
 import static util.DB.*;
@@ -25,9 +24,29 @@ import events.Listener;
  * the drawing thread. This also means that each container needs to store two copies of each child...
  * Request update also needs to somehow write to that child list. 
  * 
- * Alas, tis but a dream.
+ * More musings: What does requestUpdate mean?
+ * I propose that it means "My state changed a little, but is now consistent. Could you change me to reflect that"
+ * in which case copying the whole structure for each delta is kinda dumb.
+ * So why not have function that service the appropriate deltas inside requestUpdate()?
+ * We could have all the required data bundled in a data structure (damnit not this again)
+ * where accessing its members causes it to queue deltas to a buffer structure.
+ * requestUpdate loads these deltas into the buffer and signals the object for redrawing.
+ * On draw, the parent calls update(), which reads the buffer contents. This operaton is mutually
+ * exclusive with loading, and therefore is mutually exclusive with request update.
+ * We can optimize this further with double buffering. Now we can continue loading deltas into the 
+ * buffer that is not being read while drawing is occurring. 
+ * THIS ALL HINGES ON HAVING A STATE OBJECT WHICH I DONT HAVE!!!
+ * And the flutter structure is extremely sensible now.
+ * 
+ * 
+ * Alas, tis but a dream. Back to reality:
+ * I can queue updates through the
  */
 public abstract class Element {
+
+	public static final int UPDATE_NONE = 0;
+	public static final int UPDATE_DRAW = 1;
+	public static final int UPDATE_TRANSFORM = 2;
 	
 	// The parent container. If this is a screen object, parent will be null and it
 	// will draw onto the physical screen.
@@ -35,8 +54,15 @@ public abstract class Element {
 
 	public PVector pos;
 	float w, h;
-
+	
 	protected PGraphics g;
+	
+	/*
+	 *  VERY HACKY BECAUSE I DONT WANT TO REWORK **LITERALLY** EVERYTHING
+	 *  Provides concurrency optimization.
+	 *  Upon requestUpdate(), class contents are copied to the buffer (How pratical is this exactly?)
+	 */
+	
 	
 	// Indidcates whether the element has been destroyed
 	protected boolean exists = true;
@@ -93,14 +119,19 @@ public abstract class Element {
 	// method for updating the element's graphics.
 	protected abstract void update();
 
+	// Draw mode by default
 	protected void requestUpdate() {
-		// if updatable is true, then that implies that all the parent objects are
-		// pending an update too.
-		updatable = max(1, updatable);
-		// considering conditional call if parent is not currently pending an update.
-		if (isConcrete()) {
+		requestUpdate(UPDATE_DRAW);
+	}
+	
+	protected void requestUpdate(int level) {
+		// if updatable is true, then that implies that ancestors are
+		// pending an update too and we dont need to ask them to update.
+		if (updatable == 0 && parent != null) {
 			parent.requestUpdate();
 		}
+		updatable = max(updatable, level);
+		
 	}
 
 	// generally resetting graphics is done with the intent of drawing onto that
@@ -124,17 +155,20 @@ public abstract class Element {
 		applyTransform();
 		pg().image(getGraphics(), 0, 0);
 		pg().popMatrix();
+		pg().noTint();
 	}
 
 	protected void checkUpdates() {
 		// if an update has been queued for this element do the business
-		if (updatable > 0) {
+		if (updatable >= UPDATE_DRAW) {
 			updatable = 0;
 			if (visible) {
 				g.beginDraw();
-				update();
+				update(); // Update might invoke requestUpdate();
 				g.endDraw();
 			}
+		}else {
+			updatable = 0;
 		}
 	}
 
@@ -209,7 +243,8 @@ public abstract class Element {
 	}
 
 	public void setParent(Container p) {
-		if (parent != null && parent != p)
+		if (parent == p) return;
+		if (parent != null)
 			parent.remove(this);
 		parent = p;
 		requestUpdate();
@@ -218,9 +253,11 @@ public abstract class Element {
 	public Container getParent() {
 		return parent;
 	}
+	
 
 	// returns true if element has the ability to exist.
-	// checks if the highest element in the parent heirachy is a screen object.
+	// checks if the highest element in the parent hierarchy is a screen object.
+	// Screen object overrides this function to return true.
 	public boolean isConcrete() {
 		if (parent == null)
 			return false;

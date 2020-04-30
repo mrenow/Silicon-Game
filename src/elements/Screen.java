@@ -19,7 +19,7 @@ public abstract class Screen extends Container {
 
 	@Override
 	protected void requestUpdate() {
-		updatable = 1;
+		updatable = UPDATE_DRAW;
 	}
 
 	@Override
