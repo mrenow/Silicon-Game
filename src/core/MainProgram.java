@@ -30,7 +30,8 @@
  * 
  * Current Bugs:
  *  - Highly connected wires tend to create infinite update loops 
- *  - A few visual bugs with Oscilloscopes and the copy paste feature
+ *  - Perhaps related, highly connected wires also tend to hang the update loop.
+ * 
  *  
  */
 

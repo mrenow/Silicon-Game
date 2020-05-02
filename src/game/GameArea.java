@@ -1,5 +1,6 @@
 package game;
 import static core.MainProgram.*;
+import static processing.core.PApplet.println;
 import static util.DB.*;
 import elements.Container;
 import elements.MapNavigator;
@@ -18,6 +19,8 @@ import util.DB;
 import util.LLinkedList;
 import util.SparseQuadTree;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.ListIterator;
 
 import async.ActiveAsyncEvent;
@@ -90,10 +93,9 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 
 	public MessageOverlay messageoverlay;
 	
-	public GameArea(float x, float y, float w, float h, int size, Container p, LLinkedList<WireSegment> load_tiles) {
+	public GameArea(float x, float y, float w, float h, int size, Container p) {
 		super(x, y, w, h, p);
 
-		tiles = new SparseQuadTree<WireSegment>(size);
 		dimx = dimy = 1 << size;
 		offset = new PVector(dimx / 2, dimy / 2);
 		backgroundcolor = p3.color(230, 230, 230);
@@ -101,18 +103,15 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 
 		zoom = 100;
 		offset = new PVector(0, 0);
-		
+
+		tiles = new SparseQuadTree<WireSegment>(size);
 		WireSegment.container = tiles;
 		WireSegment.potentialdisconnects.clear();
-			
-		// Borrowing functionality kthx
-		clipboard = load_tiles;
-		if(clipboard != null) {
-			paste(0,0);
-			clipboard = null;
-		}
+		
 		setZoomBounds(1, 100);
-		setOffsetBounds(-500, -500, 800, 800);
+		int areapadding = 10;
+		
+		setOffsetBounds(-areapadding, -areapadding, dimx + areapadding, dimy + areapadding);
 		
 		messageoverlay = new MessageOverlay(this);
 
@@ -125,8 +124,17 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		tickscheduler.start();
 		setSpeed(10);
 	}
-	public GameArea(float x, float y, float w, float h, int size, Container p) {
-		this(x, y, w, h, size, p, null);
+	public GameArea(float x, float y, float w, float h, int size, Container p, Object loadtiles) {
+		this(x, y, w, h, size, p);
+		try {
+			if(loadtiles != null) loadSave(loadtiles);
+		} catch (ClassCastException e){
+			println(e.getMessage());
+			DB_W(this,"Corrupted data while loading.");
+			tiles = new SparseQuadTree<WireSegment>(size);
+			WireSegment.container = tiles;
+			WireSegment.potentialdisconnects.clear();
+		}
 	}
 	@Override
 	protected void update() {
@@ -165,7 +173,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		drawChildren();
 	}
 	
-	private void drawObjects(LLinkedList<WireSegment> objects) {
+	private void drawObjects(Iterable<WireSegment> objects) {
 		
 		// Only loads objects within viewing pane
 		// New linked list for optimization to remove start and end nodes.
@@ -173,7 +181,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		WireSegment w = null;		
 		Gate g1 = null;
 		// Draw N silicon
-		ListIterator<WireSegment> witer = objects.iterator();
+		ListIterator<WireSegment> witer = (ListIterator<WireSegment>) objects.iterator();
 		ListIterator<Gate> giter;
 		
 		LLinkedList<WireSegment> active = new LLinkedList<WireSegment>();
@@ -214,7 +222,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				giter.remove();
 			}
 		}
-		DB.DB_U(gates);
 		
 		
 		// inactive gates
@@ -226,7 +233,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		
 		// Draw P silicon
-		witer = objects.iterator();
+		witer = (ListIterator<WireSegment>) objects.iterator();
 		while (witer.hasNext()) {
 			w = witer.next();
 			if (w.mode == WireSegment.P_TYPE || w.mode == WireSegment.P_GATE) {
@@ -269,7 +276,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		gates.clear();
 		
 		// Draw metal
-		witer = objects.iterator();
+		witer = (ListIterator<WireSegment>) objects.iterator();
 		g.fill(METAL_INACTIVE_COLOR);
 		while (witer.hasNext()) {
 			w = witer.next();
@@ -295,7 +302,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		// Draw Power
 		g.stroke(METAL_ACCENT_COLOR);
 		g.strokeWeight(0.06f);
-		witer = objects.iterator();
+		witer = (ListIterator<WireSegment>) objects.iterator();
 		g.fill(METAL_INACTIVE_COLOR);
 		while (witer.hasNext()) {
 			w = witer.next();
@@ -318,7 +325,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		active.clear();
 		
 		//draw vias 
-		witer = objects.iterator();
+		witer = (ListIterator<WireSegment>) objects.iterator();
 		g.noFill();
 		while (witer.hasNext()) {
 			w = witer.next();
@@ -501,6 +508,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 	}
 	
+	// First flip around X axis, then rotate
 	private void drawClipboard() {
 		PVector mousepos = localToMapPos(localMouseX(), localMouseY());
 		int mousex = floor(mousepos.x);
@@ -511,11 +519,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 
 		//move 0,0 to mousex, mousey 
 		g.translate(mousex, mousey);
+
 		g.rotate(rotation*PI/2);
-		if(flipped)	g.scale(1,-1);	
-		// Rotation becomes weird due to flip
-		rotation = (flipped)?((5-rotation)%4):rotation;
-		switch(rotation) {
+
+		if(flipped) {
+			g.scale(-1,1);
+		}
+		switch(flipped? (3 - rotation)%4 : rotation) {
 		case 0:
 			//do nothing 
 			break;
@@ -532,9 +542,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			g.translate(-clipboardregion.getWidth(),0);
 			break;
 		}
-		
 		//move startx, starty to 0,0
-		g.translate(-startx, -starty);
+		g.translate(-clipboardregion.x1, -clipboardregion.y1);
 		drawObjects(clipboard);
 		g.popMatrix();
 	
@@ -1091,6 +1100,26 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			}	
 		}
 	}
+		
+	/*
+	 * SAVING STATE
+	 */
+
+
+	public Object getSave() {
+		ArrayList<TileData> tiledatalist = new ArrayList<TileData>();
+		for (WireSegment w: tiles.elements) {
+			tiledatalist.add(new TileData(w.mode,w.x,w.y));
+		}
+		return tiledatalist;
+	}
+	
+	public void loadSave(Object tiledatalist) throws ClassCastException{
+		for (TileData w: (ArrayList<TileData>) tiledatalist) {
+			delete(w.x,w.y,WireSegment.getLayer(w.mode));
+			makeObject(w.x,w.y, w.mode);	
+		}
+	}
 	
 	/*
 	 * SELECTION AND EDITING
@@ -1123,12 +1152,12 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 	}
 	Selection region = null;
-	
+	// positive -> clockwise
 	int rotation = 0;
 	boolean flipped = false;
 	
 	// upon select and copy all wires in the range will be placed in here.
-	private LLinkedList<WireSegment> clipboard;
+	private Iterable<WireSegment> clipboard;
 	Selection clipboardregion = null;
 	// paste mode
 	// CTRL to place without ending paste mode
@@ -1136,8 +1165,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	// Escape to exit
 	boolean ispasting = false;
 	boolean iscopying = false;
-	int startx;
-	int starty;
 	
 	boolean canedit = true;
 	
@@ -1174,8 +1201,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		clipboard = tiles.get(region.x1,region.y1,region.x2,region.y2);
 		clipboardregion = new Selection(region);
 		iscopying = true;
-		startx = region.x1;
-		starty = region.y1;
 		rotation = 0;
 		flipped = false;
 	}
@@ -1189,7 +1214,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		ispasting = true;
 	}
 
-	// Flips around x axis then clockwise rotation of 90 degrees.
+	// Flips around y axis then clockwise rotation of 90 degrees.
 	// Pastes with top left corner at mouse square.
 	public void paste(int x, int y) {
 		
@@ -1197,16 +1222,15 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			int newx;
 			int newy;
 			
-			int localx = w.x-startx;
-			int localy = w.y-starty;
+			int localx = w.x-clipboardregion.x1;
+			int localy = w.y-clipboardregion.y1;
 			
 			
 			if(flipped) {
-				localy = region.getHeight() - localy;
+				localx = clipboardregion.getWidth() - localx - 1;
 			}
 			int newlocalx;
 			int newlocaly;
-			println(rotation);
 			switch((rotation + 4)% 4) {
 				case 0:
 					newlocalx = localx;
@@ -1221,7 +1245,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 					newlocaly = clipboardregion.getHeight() - localy-1;
 					break;
 				case 3:
-					newlocalx = localy-1 ;
+					newlocalx = localy;
 					newlocaly = clipboardregion.getWidth() - localx-1;
 					break;
 				default:
@@ -1375,4 +1399,17 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 	}
 }
-
+// Must be located here so it does not contain an instance of GameArea
+class TileData implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	byte mode;
+	int x, y;
+	public TileData(byte mode, int x, int y) {
+		this.mode = mode;
+		this.x = x;
+		this.y = y;
+	}
+}

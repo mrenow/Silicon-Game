@@ -23,8 +23,9 @@ public abstract class MapNavigator extends Container{
 	
 	protected float zoomrate;
 	
-	private float minzoom = 10;
-	private float maxzoom = 0.1f;
+	// Overriden by the screen size constraint
+	private float minzoom = 0.1f;
+	private float maxzoom = 10;
 	
 	
 	
@@ -70,17 +71,9 @@ public abstract class MapNavigator extends Container{
 	}
 	//zoom at a specific location.
 	public void addZoom(float z, PVector v) {
-		println("zooming");
-		
 		float oldzoom = zoom;
 		PVector centre = localToMapPos(v);
-		zoom *= pow(zoomrate, z);
-		if(zoom > maxzoom) {
-			zoom = maxzoom;
-		}
-		if(zoom < minzoom) {
-			zoom = minzoom;
-		}
+		zoom = constrain(zoom * pow(zoomrate, z), getMinZoom(), getMaxZoom());
 		//zoom change
 		float ratio = oldzoom/zoom;
 		
@@ -96,10 +89,10 @@ public abstract class MapNavigator extends Container{
 
 	public float getMaxZoom() {
 		return maxzoom;
-		
 	}
+	// Ensure that screensize is not greater than bounds.
 	public float getMinZoom() {
-		return minzoom;
+		return max(minzoom, getWidth()/(maxoffset.x - minoffset.x), getHeight()/(maxoffset.y - minoffset.y));
 	}
 	public float getZoom() {
 		return zoom;
@@ -157,8 +150,8 @@ public abstract class MapNavigator extends Container{
 	
 
 	private void constrainOffset() {
-		offset.x = constrain(offset.x, minoffset.x, maxoffset.x);
-		offset.y = constrain(offset.y, minoffset.y, maxoffset.y);
+		offset.x = constrain(offset.x, minoffset.x, maxoffset.x - getWidth()/zoom);
+		offset.y = constrain(offset.y, minoffset.y, maxoffset.y - getHeight()/zoom);
 	}
 
 	// Transforms to zoomed and translated context

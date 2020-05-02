@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 
 import core.Images;
 import effects.FadeContainer;
@@ -73,13 +74,15 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 			Object res1 = oistream.readObject();
 			Object res2 = oistream.readObject();
 			
-			game = new GameArea(0, 50, 1200, 500, depth, this, (LLinkedList<WireSegment>)res1);
-			display = new DataDisplay(0, 550, 1200, 300, this, game, (LLinkedList<Pair<Integer, Integer>>)res2);
-		}catch(IOException | ClassNotFoundException | ClassCastException e) {
+			// Games will handle what to do with corrupted data
+			game = new GameArea(0, 50, 1200, 500, depth, this, res1);
+			display = new DataDisplay(0, 550, 1200, 300, this, game, res2);
+
+		}catch(IOException | ClassNotFoundException e) {
+			println("File not found");
 			println(e.getMessage());
-			println("File not found | Corrupted data. Welp new slate then.");
 			game = new GameArea(0, 50, 1200, 500, depth, this);
-			display = new DataDisplay(0, 550, 1200, 300, this, game);	
+			display = new DataDisplay(0, 550, 1200, 300, this, game);
 		} finally {
 			try {
 				if(oistream != null) {
@@ -191,13 +194,11 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 	public boolean saveState() {
 		try {
 			ObjectOutputStream oostream = new ObjectOutputStream(new FileOutputStream("data/level_" + name + ".bin"));
-			oostream.writeObject(game.tiles.elements);
+
+			oostream.writeObject(game.getSave());
 			// pack up scopes
-			LLinkedList<Pair<Integer, Integer>> scopes = new LLinkedList<Pair<Integer, Integer>>();
-			for (Oscilloscope o : game.display.scopes) {
-				scopes.add(new Pair<Integer, Integer>(o.x, o.y));
-			}
-			oostream.writeObject(scopes);
+
+			oostream.writeObject(display.getSave());
 			oostream.close();
 			return true;
 		}catch(IOException e) {

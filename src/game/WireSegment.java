@@ -360,7 +360,7 @@ public class WireSegment extends DisjointSet implements Serializable {
 	
 	public void updatePowered(){return;}
 	
-	public String modeToString() {
+	public static String modeToString(byte mode) {
 		switch(mode) {
 		case WireSegment.METAL:
 			return "METAL";
@@ -380,23 +380,25 @@ public class WireSegment extends DisjointSet implements Serializable {
 			return "INVALID";
 		}
 	}
-	public byte[] getLayer() {
+	public String modeToString() {
+		return modeToString(mode);
+	}
+	public static byte[] getLayer(byte mode) {
 		switch(mode) {
-		case WireSegment.METAL:
-			return METAL_LAYER;
 		case WireSegment.N_TYPE:
-			return SILICON_LAYER;
 		case WireSegment.P_TYPE:
-			return SILICON_LAYER;
-		case WireSegment.VIA:
-			return VIA_LAYER;
 		case WireSegment.N_GATE:
-			return SILICON_LAYER;
 		case WireSegment.P_GATE:
 			return SILICON_LAYER;
+		case WireSegment.METAL:
 		case WireSegment.POWER:
 			return METAL_LAYER;
+		case WireSegment.VIA:
+			return VIA_LAYER;
 		}
 		return null;
+	}
+	public byte[] getLayer() {
+		return getLayer(mode);
 	}
 }

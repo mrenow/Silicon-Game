@@ -16,9 +16,7 @@ import java.io.Serializable;
  * do not have any children either.
  */
 @SuppressWarnings("unchecked")
-public class SparseQuadTree<T> implements Serializable{
-
-	public static final long serialVersionUID = 1L;
+public class SparseQuadTree<T>{
 
 	public int depth;
 	int length;

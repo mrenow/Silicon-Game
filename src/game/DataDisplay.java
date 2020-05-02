@@ -2,6 +2,10 @@ package game;
 
 import static core.MainProgram.*;
 import static util.DB.*;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+
 import util.LLinkedList;
 import util.Pair;
 import elements.Container;
@@ -20,13 +24,15 @@ public class DataDisplay extends ScrollPane{
 		game = g;
 		g.display = this;
 	}
-	public DataDisplay(float x, float y, float w, float h, Container p, GameArea g, LLinkedList<Pair<Integer, Integer>> loaded_scopes) {
-		super(x, y, w, h, ScrollPane.SCROLL_Y, p);
-		game = g;
-		g.display = this;
-		for (Pair<Integer, Integer> pos : loaded_scopes) {
-			addScope(pos.val1, pos.val2);
+	public DataDisplay(float x, float y, float w, float h, Container p, GameArea g, Object loadedscopes) {
+		this(x, y, w, h, p, g);
+		try {
+			loadSave(loadedscopes);
+		}catch(ClassCastException e) {
+			DB_W(this, " Scopes not successfully loaded:", e.getMessage());
+			scopes = new LLinkedList<Oscilloscope>();
 		}
+		
 	}
 	
 	public void addScope(int x, int y) {
@@ -71,5 +77,27 @@ public class DataDisplay extends ScrollPane{
 		for(Oscilloscope o : scopes) {
 			o.updateProbe();
 		}
+	}
+	
+	public Object getSave() {
+		ArrayList<ScopeData> data = new ArrayList<ScopeData>();
+		for (Oscilloscope o: scopes) {
+			data.add(new ScopeData(o.x, o.y));
+		}
+		return data;
+	}
+	private void loadSave(Object data) throws ClassCastException{
+		for (ScopeData o: (ArrayList<ScopeData>)data) {
+			addScope(o.x, o.y);
+		}
+	}
+
+}
+class ScopeData implements Serializable{
+	private static final long serialVersionUID = 1L;
+	int x,y;
+	ScopeData(int x, int y){
+		this.x = x;
+		this.y = y;
 	}
 }

@@ -46,8 +46,7 @@ public class Text extends Element {
 				currheight += 1;
 				continue;
 			}
-			currwidth += font.width(text.charAt(i)); 
-			println(currwidth);
+			currwidth += font.width(text.charAt(i));
 		}
 		if (currwidth > maxwidth) maxwidth = currwidth;
 		// +4 required to accomodate for weird undocumented padding with the textbox rendering.
