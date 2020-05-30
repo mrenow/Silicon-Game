@@ -16,6 +16,7 @@
  * - Fixed bug visual bug with paste preview and oscilloscopes
  * - Fixed bug where escape was not escaping paste mode all of the time.
  * - Graphical change to oscilloscopes
+ * - Clipboard flipping and preview now works properly *phew*
  * - + Added more convenient constructors
  * - + Message log to show component changes and any actions
  * - + Pause button which pauses oscilloscope output
@@ -30,7 +31,7 @@
  * 
  * Current Bugs:
  *  - Highly connected wires tend to create infinite update loops 
- *  - Perhaps related, highly connected wires also tend to hang the update loop.
+ *  - Perhaps related, highly connected wires also tend to hang the update thread.
  * 
  *  
  */

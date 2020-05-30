@@ -6,9 +6,9 @@ import static util.DB.*;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.ListIterator;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import game.Gate;
-
 /*
  * An empty linked list contains one node, the start node. The payload is null.
  * Also, welcome to Pointer Hell. Is it your first time here?
@@ -23,11 +23,17 @@ public class LLinkedList<T> implements Iterable<T>{
 	// NOT THREAD SAFE AT ALL: MOVE TO ITERATORS.
 	Node<T> focus;
 	int index;
+	
+	ReentrantReadWriteLock lk;
+	// lock for the lock... ugh why do I have to do this
+	final ReentrantReadWriteLock lklk;
 
 	// start -> end
 	public LLinkedList() {
 		start = new Node<T>(Node.START, end = new Node<T>(Node.END,null));
 		index = 0;
+		lk = new ReentrantReadWriteLock();
+		lklk = new ReentrantReadWriteLock();
 	}
 
 	// linked list with one element.
@@ -55,22 +61,27 @@ public class LLinkedList<T> implements Iterable<T>{
 	// O(n)
 	// highly inefficient, would be better off using an iterator
 	public T get(int i) {
+		lockRead();
 		resetFocus();
 		for (; i > 0; i--) {
 			focusTo(index + 1);
 		}
+		unlockRead();
 		return focus.getNext().o;
-	}
+	} 
 
 	// *?*
 	public int indexOf(T e) {
+		lockRead();
 		resetFocus();
 		while (!isLast(focus)) {
 			if (focus.getNext().o == e) {
+				unlockRead();
 				return index;
 			}
 			focusTo(index + 1);
 		}
+		unlockRead();
 		return -1;
 	}
 
@@ -78,68 +89,90 @@ public class LLinkedList<T> implements Iterable<T>{
 		return indexOf(e) != -1;
 	}
 	//checks for start node
-	public boolean contains(LLinkedList<Gate> gates) {
+	public boolean contains(LLinkedList<T> ls) {
 		Node<T> curr = start;
+		lockRead();
 		while(curr != end) {
-			if(curr == gates.start) {
+			if(curr == ls.start) {
+				unlockRead();
 				return true;
 			}
 			curr = curr.next;
 		}
+		unlockRead();
 		
 		return false;
 	}
 
 
 	public void addFirst(T e) {
+		lockWrite();
 		start.next = new Node<T>(e, start.next);
+		unlockWrite();
 	}
 
 	// *y*
 	public void addFirst(T... list) {
-		for (int i =  list.length; i > 0; i--) {
-			addFirst(list[i-1]);		
+		lockWrite();
+		for (int i =  list.length; i-- != 0 ;) {
+			start.next = new Node<T>(list[i], start.next);
 		}
+		unlockWrite();
 	}
 
 	// *y*
 	public void addFirst(LLinkedList<T> list) {
+		lockWrite();
+		list.lockWrite();
 		list.end.setNext(start.getNext());
 		start.setNext(list.start);
+		list.unlockWrite();
+		unlockWrite();
 	}
 
 	// *y*
 	// append to end of list. End node transforms into payload node.
 	// new end node is inserted.
 	public void add(T e) {
+		lockWrite();
 		end.assume(new Node<T>(e,end = new Node<T>(Node.END,end.next)));
+		unlockWrite();
 	}
 
 	public void add(T... list) {
+		lockWrite();
 		for (T e : list) {
-			add(e);
+			end.assume(new Node<T>(e,end = new Node<T>(Node.END,end.next)));
 		}
+		unlockWrite();
 	}
 
 	// *y*
 	// End transforms into new lists start node
 	public void add(LLinkedList<T> list) {
 		Node<T> endnext = end.next;
+		lockWrite();
+		list.lockWrite();
 		end.assume(list.start);
 		list.start = end;
 		list.end.setNext((end = new Node<T>(Node.END,endnext)));
-
+		list.unlockWrite();
+		unlockWrite();
+		list.switchLock(lk);
 	}
 
 	// addAt will place elements before element at specified index.
 	public void addAt(int i, T e) {
+		lockWrite();
 		resetFocus();
 		focusTo(i);
 		Node<T> e1 = new Node<T>(e, focus.getNext());
 		focus.setNext(e1);
+		unlockWrite();
 	}
 
 	public void addAt(int i, T... list) {
+		lockWrite();
 		resetFocus();
 		focusTo(i);
 		Node<T> next = focus.getNext();
@@ -149,56 +182,80 @@ public class LLinkedList<T> implements Iterable<T>{
 			prev = prev.getNext();
 		}
 		prev.setNext(next);
+		unlockWrite();
 	}
 
 	public void addAt(int i, LLinkedList<T> list) {
+		lockWrite();
 		resetFocus();
 		focusTo(i);
 		// Join end
 		list.end.setNext(focus.getNext());
 		// Join beginning
 		focus.setNext(list.start);
+		unlockWrite();
+		list.switchLock(lk);
 	}
 
 	public T take(int i) {
+		lockWrite();
 		resetFocus();
 		focusTo(i);
 		Node<T> next = focus.getNext();
 		if (isLast(focus)) {
+			unlockWrite();
 			throw new ArrayIndexOutOfBoundsException(Integer.toString(i + 1) + ">" + Integer.toString(index));
 		}
 		focus.setNext(focus.getNext().next); // child = grandChild, skipping one element.
 
+		unlockWrite();
 		return next.o;
 	}
 
 	public boolean remove(T o) {
+		lockRead();
 		Node<T> curr = start;
 		
 		while(curr.next.o != o) {
-			if(curr.next == end) return false;
+			if(curr.next == end) {
+				unlockRead();
+				return false;
+			}
 			curr = curr.next;
 		}
+		unlockRead();
+		lockWrite();
 		curr.next = curr.next.next;
 		curr.next.prev = curr;
+		unlockWrite();
 		return true;
 	}
 	// Searches for the start node of list
 	// Assumes that the existence of a start node implies an end node.
 	public boolean remove(LLinkedList<T> list) {
+		lockRead();
 		Node<T> curr = start;
 		
 		while(curr.next != list.start) {
-			if(curr == end) return false;
+			if(curr == end) {
+				unlockRead();
+				return false;
+			}
 			curr = curr.next;
 		}
+		unlockRead();
+
+		lockWrite();
 		curr.next = list.end.next;
 		curr.next.prev = curr;
 		//separate list from parent for safety
 		list.end.next = null;
+		unlockWrite();
+		list.switchLock(new ReentrantReadWriteLock());
 		return true;
 	}
 	public boolean removeAll(T o) {
+		lockWrite();
 		Node<T> curr = start;
 		boolean exists = false;
 		while(curr.next != end) {
@@ -212,29 +269,38 @@ public class LLinkedList<T> implements Iterable<T>{
 				curr = curr.next;
 			}
 		}
+		unlockWrite();
 		return exists;
 		
 	}
 	public boolean removeLast() {
-		if(empty()) return false;
+		if(empty()) {
+			return false;
+		}
+		lockWrite();
 		end.setPrev(end.prevElement().prev);
+		unlockWrite();
 		return true;
 	}
 	
 	// clear all contents of list.
 	public void clear() {
+		lockWrite();
 		start.next = end;
 		end.prev = start;
+		unlockWrite();
 	}
 	public boolean empty() {
 		return isLast(start);
 	}
 	//removes its existence from parent if exists.
 	public void delete() {
+		lockWrite();
 		if(end.next != null) {
 			end.next.prev = start.prev;
 			start.assume(end.next);
 		}
+		unlockWrite();
 	}
 	
 	// UNTESTED
@@ -265,30 +331,60 @@ public class LLinkedList<T> implements Iterable<T>{
 			index++;
 		}
 	}
+	public void lockRead() {
+		lklk.readLock().lock();
+		lk.readLock().lock();
+	}
+	public void unlockRead() {
+		lk.readLock().unlock();
+		lklk.readLock().unlock();
+	}
+	public void lockWrite() {
+		lklk.readLock().lock();
+		lk.writeLock().lock();
+	}
+	public void unlockWrite() {
+		lk.writeLock().unlock();
+		lklk.readLock().unlock();
+	}
+	/*
+	 * Switches which lock we are using
+	 * Do no use within a read/write section.
+	 */
+	void switchLock(ReentrantReadWriteLock newlock) {
+		lklk.writeLock().lock();
+		lk = newlock;
+		lklk.writeLock().unlock();
+	}
 
 	public ListIterator<T> iterator() {
 		return new LinkedIterator();
 	}
 
 	public T[] toArray(T[] out) {
+		lockRead();
 		resetFocus();
 		while (!isLast(focus)) {
 			out[index] = focus.getNext().o;
 			focusTo(index + 1);
 		}
+		unlockRead();
 		return out;
 	}
 
 	public int size() {
+		lockRead();
 		resetFocus();
 		while (!isLast(focus)) {
 			focusTo(index + 1);
 		}
+		unlockRead();
 		return index;
 	}
 
 	@Override
 	public String toString() {
+		lockRead();
 		StringBuilder out = new StringBuilder(5);
 		// 
 		out.append("LLinkedList:[ ");
@@ -323,45 +419,57 @@ public class LLinkedList<T> implements Iterable<T>{
 			curr = curr.next;
 			index ++;
 		}
+		unlockRead();
 		out.deleteCharAt(out.length() - 1);
 		out.append("]");
-		
 		return out.toString();
 	}
 
 	public boolean equals(Object that) {
 		if (that instanceof LLinkedList) {
+			lockRead();
 			ListIterator<T> thisiterator = iterator();
 			// Casting of that to LLinkedList guaranteed.
+			((LLinkedList<T>) that).lockRead();
 			ListIterator<T> thatiterator = ((LLinkedList<T>) that).iterator();
 			while (thisiterator.hasNext() && thatiterator.hasNext()) {
-				if (!thisiterator.next().equals(thatiterator.next()))
+				if (!thisiterator.next().equals(thatiterator.next())) {
+					((LLinkedList<T>) that).lockRead();		
+					unlockRead();
 					return false;
+				}
 			}
-			if (thisiterator.hasNext() != thatiterator.hasNext())
+			if (thisiterator.hasNext() != thatiterator.hasNext()) {
+				((LLinkedList<T>) that).lockRead();
+				unlockRead();
 				return false;
-
+			}
+			((LLinkedList<T>) that).lockRead();
+			unlockRead();
 			return true;
 		} else
 			return false;
 	}
 	boolean isLast(Node<T> n) {
+		lockRead();
 		Node<T> nextnode = n.next;
 		while (nextnode != end) {
 			if(nextnode.next == null) {
 				println("broken ",this);
 				println(nextnode.o);
 				println(nextnode.mode);
-				
 			}
 			if(nextnode.mode == Node.NODE) {
+				unlockRead();
 				return false;	
 			}
 			nextnode = nextnode.next;
 		}
+		unlockRead();
 		return true;
 	}
 	boolean isFirst(Node<T> n) {
+		lockRead();
 		Node<T> prevnode = n.prev;
 		while (prevnode != start) {
 			if(prevnode.prev == null) {
@@ -371,10 +479,12 @@ public class LLinkedList<T> implements Iterable<T>{
 				
 			}
 			if(prevnode.mode == Node.NODE) {
+				unlockRead();
 				return false;	
 			}
 			prevnode = prevnode.prev;
 		}
+		unlockRead();
 		return true;
 	}
 	/*
@@ -390,7 +500,7 @@ public class LLinkedList<T> implements Iterable<T>{
 	// ACTUALLY I KINDA DOUBT IT THIS WAS A WASTE OF MY TIME
 	// I GUESS IF YOURE NOT WRITING ITS A OKAY
 	// WAIT NO ITS GREAT JOKES
-	private class LinkedIterator implements ListIterator<T> {
+	public class LinkedIterator implements ListIterator<T> {
 		Node<T> curr;
 		int id;
 
@@ -490,8 +600,6 @@ public class LLinkedList<T> implements Iterable<T>{
 			out.append("]");
 			
 			return out.toString();
-		
-			
 		}
 		
 	}

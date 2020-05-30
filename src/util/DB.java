@@ -72,7 +72,8 @@ public class DB {
 		for (int i = BEGIN_PRINTS; i < trace.length - END_PRINTS; i++) {
 			println(trace[i]);
 		}
-		println(p3.millis());
+		print(p3.millis());
+		println("ms");
 		return false;
 	}
 }

@@ -65,6 +65,7 @@ public class Power extends WireSegment{
 		//update wire state and queue updates for appropriate neighbors.
 		if(toggled) {
 			for(WireSegment connection : connections) {
+				connection = (WireSegment)connection.getAncestor();
 				if(!connection.isActive() && connection.isPermissive() && !connection.updatablecurrent) {
 					current.add(connection);
 					connection.updatablecurrent = true;
@@ -72,6 +73,7 @@ public class Power extends WireSegment{
 			}
 		} else {
 			for(WireSegment connection : connections) {
+				connection = (WireSegment)connection.getAncestor();
 				if(connection.isActive() && connection.isPermissive() && !connection.updatablecurrent) {
 					current.add(connection);
 					connection.updatablecurrent = true;

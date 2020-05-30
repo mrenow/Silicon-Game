@@ -75,8 +75,10 @@ public class Gate extends WireSegment{
 	}
 	
 	public void updateActive(LLinkedList<WireSegment> current, LLinkedList<WireSegment> next) {
+		isupdating = true;
 		//if segment is gate, do not permit flow based on gate type
 		if(isPermissive()) super.updateActive(current,next);
+		// Not permissive
 		else{
 			for (Gate g : gates) {
 				if(g.getPowered()&& !g.updatablenext) {
@@ -85,6 +87,8 @@ public class Gate extends WireSegment{
 				}
 			}
 			for (WireSegment connection : connections) {
+				connection = (WireSegment)connection.getAncestor();
+				// For all unpowered wires adjacent, tell them to update cos we just turned off.
 				if(connection.getActive() != WIRE_OFF && !connection.updatablecurrent) {
 					current.add(connection);	
 					connection.updatablecurrent = true;
@@ -93,6 +97,7 @@ public class Gate extends WireSegment{
 			setActive(WIRE_OFF);
 			updatablecurrent = false;
 		}
+		isupdating = false;
 	}
 	
 	public boolean powered() {

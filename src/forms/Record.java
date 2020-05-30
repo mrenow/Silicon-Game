@@ -2,7 +2,7 @@
 // Currently unimplemented package for creating user forms with data entry
 package forms;
 
-import util.LinkedList;
+import tempUtil.LinkedList;
 
 
 /* Data types:

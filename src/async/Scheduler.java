@@ -43,7 +43,7 @@ public class Scheduler {
 
 	// schedules call for async event as soon as possible
 	public void call(AsyncEvent e) {
-		addToSchedule(0, e);
+		addToSchedule(p3.millis(), e);
 	}
 
 	// schedules call of an async event only after a specific system time.

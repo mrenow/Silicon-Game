@@ -92,6 +92,7 @@ public class MenuScreen extends Screen{
 		final static float HEIGHT = 60;
 	
 		ImageButton play;
+		ImageButton delete;
 		Text namelabel;
 		
 		
@@ -102,14 +103,21 @@ public class MenuScreen extends Screen{
 			id = i;
 			namelabel = new Text(5,5,800,50,LEVEL_TEXT[id],this);
 			namelabel.setAlign(CENTER, CENTER);
-			play = new ImageButton(getWidth()-80,5,getHeight()-10,getHeight()-10,Images.FORWARD_ARROW,this) {
+			float buttonsiz = getHeight()-10;
+			play = new ImageButton(getWidth() - buttonsiz - 20, 5, buttonsiz, buttonsiz, Images.FORWARD_ARROW, this) {
 				public void elementReleased() {
 					LEVEL.destroyAll();
 					LEVEL = new GameScreen(LEVEL_TEXT[id],LEVEL_SIZE[id]);
-					
 				}
 			};
 			play.setMode(ImageButton.CENTERED);
+			delete = new ImageButton(getWidth() - 2*buttonsiz - 40, 5, buttonsiz, buttonsiz, Images.FORWARD_ARROW, this) {
+				public void elementReleased() {
+					
+				}
+			};
+
+			delete.setMode(ImageButton.CENTERED);
 			
 		}
 		
@@ -120,7 +128,9 @@ public class MenuScreen extends Screen{
 			g.stroke(100,100,60);
 			g.rect(0, 0, getWidth(), getHeight());
 		}
-	}	
+	}
+	
+	
 	
 	
 	private final static String[] LEVEL_TEXT = {

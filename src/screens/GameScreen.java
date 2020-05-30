@@ -11,6 +11,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
+import async.AsyncEvent;
 import core.Images;
 import effects.FadeContainer;
 import elements.BasicButton;
@@ -39,12 +40,7 @@ import static util.DB.*;
 
 public class GameScreen extends Screen implements Saveable, KeyListener{
 	
-	// final static int BUTTON_FILL = p3.Color(100);
-	// final static int BUTTON_STROKE;
-	// final static int BUTTON_FILLPRESSED;
-	// final static int BUTTON_STROKEHOVERED;
-	
-	
+	public static final int AUTOSAVE_PERIOD = 150000; //2.5 minutes
 	
 	GameArea game;
 	DataDisplay display;
@@ -171,7 +167,8 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 		};
 		backbutton.setMode(ImageButton.CENTERED);
 		
-		
+		// Begin autosave scheduler
+		globalscheduler.callLater(new RunSaveState(), AUTOSAVE_PERIOD);
 	}
 
 	protected void update() {
@@ -220,5 +217,19 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 			
 		}
 	}
+	// Autosaving
+	class RunSaveState extends AsyncEvent {
+		public void run() {
+			if(saveState()) {
+				game.messageoverlay.addMessage("Autosave.");
+			}else {
+				game.messageoverlay.addMessage("Autosave Failed.");
+			}
+			if(exists) {
+				globalscheduler.callLater(new RunSaveState(), AUTOSAVE_PERIOD);
+			}
+		}
+	}
+	
 	
 }

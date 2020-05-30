@@ -124,6 +124,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		tickscheduler.start();
 		setSpeed(10);
 	}
+	// Load Constructor
 	public GameArea(float x, float y, float w, float h, int size, Container p, Object loadtiles) {
 		this(x, y, w, h, size, p);
 		try {
@@ -173,6 +174,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		drawChildren();
 	}
 	
+	
 	private void drawObjects(Iterable<WireSegment> objects) {
 		
 		// Only loads objects within viewing pane
@@ -196,7 +198,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				if(w.mode == WireSegment.N_GATE) {
 					gates.add((Gate)w);
 				}
-				if(w.isActive()) {
+				if(!canedit && w.isActive()) {
 					active.add(w);
 				} else {
 					g.rect(w.x, w.y, 1, 1);
@@ -240,7 +242,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				if(w.mode == WireSegment.P_GATE) {
 					gates.add((Gate)w);
 				}
-				if(w.isActive()) {
+				if(!canedit && w.isActive()) {
 					active.add(w);
 				} else {
 					g.rect(w.x, w.y, 1, 1);
@@ -281,7 +283,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		while (witer.hasNext()) {
 			w = witer.next();
 			if (w.mode == WireSegment.METAL) {
-				if(w.isActive()) {
+				if(!canedit && w.isActive()) {
 					active.add(w);
 				} else {
 					g.rect(w.x, w.y, 1, 1);
@@ -307,7 +309,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		while (witer.hasNext()) {
 			w = witer.next();
 			if(w.mode == WireSegment.POWER) {
-				if(w.isActive()) {
+				if(!canedit && w.isActive()) {
 					active.add(w);
 				} else {
 					g.rect(w.x, w.y, 1, 1);
@@ -368,9 +370,20 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 	}
 	
+	// For [drawDebug].
+	private void drawArrow(WireSegment w1, WireSegment w2) {
+		PVector v = new PVector(w2.x - w1.x,w2.y - w1.y);
+		
+		g.line(w1.x+0.5f, w1.y+0.5f, w2.x  + 0.5f,w2.y+0.5f);
+		v.rotate(PI/6).mult(-0.3f);
+		g.line(w2.x+0.5f,w2.y+0.5f,w2.x + v.x + 0.5f, w2.y + v.y + 0.5f);
+		v.rotate(-PI/3);
+		g.line(w2.x+0.5f,w2.y+0.5f,w2.x  + v.x + 0.5f, w2.y + v.y + 0.5f);
+	}
 	
 	private void drawDebug() {
-		
+		LLinkedList<WireSegment> objects = new LLinkedList<WireSegment>(tiles.get(floor(offset.x)-1,
+				floor(offset.y)-1, ceil(offset.x + getWidth() / zoom)+1, ceil(offset.y + getHeight() / zoom)+1)); 
 		g.pushMatrix();
 		transformView();
 		
@@ -386,18 +399,10 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 		
 		// Red arrows denote gate inputs
-		for(WireSegment w1 : tiles.elements) {
+		for(WireSegment w1 : objects) {
 			if(w1.isGate()) {
 				for (WireSegment w2 : ((Gate)w1).inputs) {
-					PVector v = new PVector(w2.x - w1.x,w2.y - w1.y);
-					
-					//draws arrow between line and parent
-					g.line(w1.x+0.5f, w1.y+0.5f, w2.x  + 0.5f,w2.y+0.5f);
-					v.rotate(PI/6).mult(-0.3f);
-					g.line(w2.x+0.5f,w2.y+0.5f,w2.x + v.x + 0.5f, w2.y + v.y + 0.5f);
-					v.rotate(-PI/3);
-					g.line(w2.x+0.5f,w2.y+0.5f,w2.x  + v.x + 0.5f, w2.y + v.y + 0.5f);
-				
+					drawArrow(w1, w2);
 				}
 			}
 			
@@ -405,38 +410,41 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		g.stroke(0);
 		g.fill(0);
-		for(WireSegment w1 : tiles.elements) {
-			PVector v = new PVector(w1.getParent().x - w1.x,w1.getParent().y - w1.y);
-			
+		for(WireSegment w1 : objects) {
 			//draws arrow between line and parent
-			g.line(w1.x+0.5f, w1.y+0.5f, w1.getParent().x  + 0.5f,w1.getParent().y+0.5f);
-			v.rotate(PI/6).mult(-0.3f);
-			g.line(w1.getParent().x+0.5f,w1.getParent().y+0.5f,w1.getParent().x + v.x +0.5f, w1.getParent().y + v.y+0.5f);
-			v.rotate(-PI/3);
-			g.line(w1.getParent().x+0.5f,w1.getParent().y+0.5f,w1.getParent().x + v.x +0.5f, w1.getParent().y + v.y+0.5f);
-
+			drawArrow(w1, (WireSegment)w1.getParent());
+			
 			// display power level, 0 for source and -1 for off
-			g.text(w1.getActive()- Integer.MIN_VALUE,w1.x + 0.5f , w1.y+0.5f);
+			if(!canedit) {
+				g.text(w1.getActive()- Integer.MIN_VALUE,w1.x + 0.5f , w1.y+0.5f);
+			}
 		}
+
+		g.stroke(255,255,0,40);
+		for(WireSegment w: objects) {
+			if(w.childnum == w.ancestor.parentnum){
+				drawArrow(w, (WireSegment)w.ancestor);
+			}
+			
+			if(canedit) {
+				g.text(Integer.toString(w.parentnum) + ", " + Integer.toString(w.childnum), w.x + 0.1f, w.y + 0.1f);
+			}
+			
+		}
+
 		g.stroke(0,255,0); 
-		
 		//green lines denote connections
-		for(WireSegment w1 : tiles.elements) {
+		for(WireSegment w1 : objects) {
 				
 			if(w1.isGate() || w1 instanceof Power){
 				for (WireSegment w2: w1.connections) {
-					PVector v = new PVector(w2.x - w1.x,w2.y - w1.y);
-					
-					//draws arrow between line and parent
-					g.line(w1.x+0.5f, w1.y+0.5f, w2.x  + 0.5f,w2.y+0.5f);
-					v.rotate(PI/6).mult(-0.3f);
-					g.line(w2.x+0.5f,w2.y+0.5f,w2.x  +0.5f, w2.y +0.5f);
-					v.rotate(-PI/3);
-					g.line(w2.x+0.5f,w2.y+0.5f,w2.x  +0.5f, w2.y +0.5f);
+					drawArrow(w1,w2);
 				}
 			}
 		}
 		
+		
+		// 
 		
 
 		
@@ -477,13 +485,15 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		for (WireSegment w : tiles.get(floor(mouse.x),floor(mouse.y))) {
 			str.append("mode: ");
 			str.append(w.modeToString());
-			str.append("\nActive: ");
-			str.append(w.getActive() - Integer.MIN_VALUE);
-			
-			if(w instanceof Gate) {
-				str.append("\nPermissive: ");
-				str.append(w.isPermissive());
-			}			
+			if(!canedit) {
+				str.append("\nActive: ");
+				str.append(w.getActive() - Integer.MIN_VALUE);
+				
+				if(w instanceof Gate) {
+					str.append("\nPermissive: ");
+					str.append(w.isPermissive());
+				}			
+			}
 			str.append("\n----\n");
 		}
 		
@@ -517,11 +527,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		g.pushMatrix();
 		transformView();
 
+		// Remember, first apply operations to the drawing grid,
+		// then apply inverse of operations to the thing being drawn
 		//move 0,0 to mousex, mousey 
 		g.translate(mousex, mousey);
 
+		// Inverse of operations on clipboard graphic
 		g.rotate(rotation*PI/2);
-
 		if(flipped) {
 			g.scale(-1,1);
 		}
@@ -765,7 +777,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			requestUpdate();
 		
 		} else if(p3.mouseButton != 3) {
-			activateSquare(localToMapPos(localMouseX(), localMouseY()));
+			drawSquare(localToMapPos(localMouseX(), localMouseY()));
 			requestUpdate();
 		}
 	
@@ -821,6 +833,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		globalscheduler.call(new RunDrawLine(x1,y1,x2,y2));
 	}
 	
+	private void drawSquare(float x, float y) {
+		globalscheduler.call(new RunActivateSquare(x,y));	
+	}
+	private void drawSquare(PVector v) {
+		globalscheduler.call(new RunActivateSquare(v.x,v.y));	
+	}
+	
 	//connects squares in a manner similar to the update connections function
 	private void rectifyMap() {
 		ListIterator<WireSegment> disconnectiter = WireSegment.potentialdisconnects.iterator();
@@ -838,7 +857,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				if(w1.canConnect(w2)) {
 					if( !w1.isSameSet(w2)) { 
 						DB_U("rectified", w2,w1);
-						w1.makeAncestor(w2);
+						w1.union(w2);
 						WireSegment.potentialdisconnects.remove(w2);
 						WireSegment.potentialdisconnects.remove(w1);
 					}
@@ -1045,9 +1064,9 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		int x; 
 		int y;
-		protected RunActivateSquare(int x, int y){
-			this.x = x;
-			this.y = y;
+		protected RunActivateSquare(float x, float y){
+			this.x = (int)x;
+			this.y = (int)y;
 			
 		}
 		@Override
@@ -1343,8 +1362,10 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	private void iterate() {
 		
 		for (WireSegment w : nextwireupdates) {
+			w = (WireSegment)w.getAncestor();
 			w.updatePowered();
 			currentwireupdates.add(w);
+			w.updatablecurrent = true;
 			w.updatablenext = false;
 		}
 		nextwireupdates.clear();
@@ -1358,7 +1379,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			currentwireupdates.clear();
 			while(iter.hasNext()) {
 				//adds update requests to both queues.
-				iter.next().updateActive(currentwireupdates, nextwireupdates);;
+				iter.next().updateActive(currentwireupdates, nextwireupdates);
 				
 			}
 			
