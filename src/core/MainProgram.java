@@ -28,11 +28,16 @@
  * - + Added ToggleButton, and a number of Effects.
  * - + Added MessageOverlay
  * - + Added Pair structure
+ * 1.2
+ * - Restructured logic update system after much blood, sweat and tears. I forgot what happened honestly.
+ * - Most of the logic system now exists in iterate()
+ * - + Fixed a bug where "zero tick pulses" were possible.
+ * - + More refactoring!
  * 
  * Current Bugs:
- *  - Highly connected wires tend to create infinite update loops 
- *  - Perhaps related, highly connected wires also tend to hang the update thread.
- * 
+ *  ? Highly connected wires tend to create infinite update loops 
+ *  ? Perhaps related, highly connected wires also tend to hang the update thread.
+ *  (Above may be mostly fixed.)
  *  
  */
 

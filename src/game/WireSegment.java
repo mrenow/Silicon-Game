@@ -9,6 +9,7 @@ import java.util.ListIterator;
 
 import processing.core.PVector;
 import util.DisjointSet;
+import util.Heap;
 import util.LLinkedList;
 import util.SparseQuadTree;
 
@@ -46,6 +47,7 @@ public class WireSegment extends DisjointSet implements Serializable {
 	public boolean updatablenext;
 	public boolean isupdating = false;
 	
+	
 	public static int WIRE_OFF = Integer.MAX_VALUE;
 
 	// Set Info
@@ -55,11 +57,15 @@ public class WireSegment extends DisjointSet implements Serializable {
 	protected int active = WIRE_OFF;
 	
 	public boolean checkdisconnects = false;
+	@Override
+	public WireSegment getAncestor(){
+		return (WireSegment) super.getAncestor();		
+	}
 	public int getActive(){
-		return ((WireSegment)getAncestor()).active;
+		return ((WireSegment)super.getAncestor()).active;
 	}
 	public void setActive(int val) {
-		((WireSegment)getAncestor()).active = val;
+		((WireSegment)super.getAncestor()).active = val;
 	}
 	
 	public WireSegment(byte mode, int x, int y) {
@@ -92,9 +98,11 @@ public class WireSegment extends DisjointSet implements Serializable {
 	public void addInfo(DisjointSet that) {
 		
 		DB_U("added",that,"->",this);
-		
 		if(this == that) {
-			DB_E("INFO OF THIS ADDED TO THIS IN", this, ", PANIC");
+			DB_E("INFO OF THIS ADDED TO \n" + 
+					"		((WireSegment)getAncestor()).active = val;\n" + 
+					"	}\n" + 
+					"THIS IN", this, ", PANIC");
 			return;
 		}
 		WireSegment child = (WireSegment) that;
@@ -110,7 +118,10 @@ public class WireSegment extends DisjointSet implements Serializable {
 		if (this.connections == null || this.gates.empty()) {
 			child.connections = this.connections;
 		} else {
-			this.connections.add(child.connections);
+			this.connections.add(child.c
+		((WireSegment)getAncestor()).active = val;
+	}
+onnections);
 		}*/
 	}
  
@@ -130,10 +141,38 @@ public class WireSegment extends DisjointSet implements Serializable {
 	public boolean isActive() {
 		return getActive() != Integer.MAX_VALUE;
 	}
+	
+	
+	// Updates wiresegment state connbased on neighbours.
+	// Returns true if neighbors also need update.
+	public boolean updateActive() {
+		if(!isAncestor()) return getAncestor().updateActive(); 
+		int min = WIRE_OFF;
+		for (WireSegment w : connections) {
+			if (w.getActive() < min) min = w.getActive();
+		}
+		// Turn off if lowest value
+		if (active <= min && active != WIRE_OFF) {
+			active = WIRE_OFF;
+			return true;
+		}
+		// Turn on if a neighbour is on.
+		if (min != WIRE_OFF && active == WIRE_OFF) {
+			active = min + 1;
+			return true;
+		}
+		return false;
+		
+	}
+	
 	// Wire is always permissive
 	public boolean isPermissive() {
 		return true;
 		
+	}
+	
+	public boolean isOn() {
+		return getActive() != WIRE_OFF;
 	}
 	
 	public boolean canConnect(WireSegment that) {
@@ -189,7 +228,7 @@ public class WireSegment extends DisjointSet implements Serializable {
 		//Via on block
 			return this.x == that.x && this.y == that.y;
 		}
-		//reduces type to P or N
+		//reduces type to connP or N
 		int this_mode = this.mode%3;
 		int that_mode = that.mode%3;
 		
@@ -259,7 +298,7 @@ public class WireSegment extends DisjointSet implements Serializable {
 		}
 		return null;
 	}
-	
+
 	public LLinkedList<WireSegment> getAdjacent(){
 		LLinkedList<WireSegment> out = new LLinkedList<WireSegment>();
 		for(Direction d: Direction.values()) {
@@ -291,13 +330,30 @@ public class WireSegment extends DisjointSet implements Serializable {
 		return false;
 		
 	}
-	
+	// old updateActive from bug-ridden old code. Update jobs are now partitioned much more neatly among the classes.
+/*
 	public void updateActive( LLinkedList<WireSegment> current, LLinkedList<WireSegment> next) {
+		if (!isAncestor()) {
+			((WireSegment)getAncestor()).updateActive(current, next);
+			return;
+		}
+		
 		isupdating = true;
 		try {
 			Thread.sleep((long) 500);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
+			// TODO Auto-generated catch bloc
+		
+		if (!permissive) {
+			if(active != WIRE_OFF) {
+				active = WIRE_OFF;
+				return true;
+			}else {
+				return false;		
+			}
+		}
+		return super.updateActive();
+	3k
 			e.printStackTrace();
 		}
 		DB_ASSERT(isAncestor(),true);
@@ -322,6 +378,18 @@ public class WireSegment extends DisjointSet implements Serializable {
 					output.updatablecurrent = true;
 				}
 			}
+	public void updateActive( LLin
+		
+		if (!permissive) {
+			if(active != WIRE_OFF) {
+				active = WIRE_OFF;
+				return true;
+			}else {
+				return false;		
+			}
+		}
+		return super.updateActive();
+	
 		} else {
 			// There is a wire stronger than this: make it one weaker than the current strongest
 			setActive(min + 1);
@@ -338,15 +406,27 @@ public class WireSegment extends DisjointSet implements Serializable {
 			if(!input.updatablenext) {
 				next.add(input); // Input's ancestor is always itself.
 				input.updatablenext = true;
+		
+		if (!permissive) {
+			if(active != WIRE_OFF) {
+				active = WIRE_OFF;
+				return true;
+			}else {
+				return false;		
+			}
+		}
+		return super.updateActive();
+	
 			}
 		}
 		
 		updatablecurrent = false;
-		isupdating = false;
+		isupdating = fconnalse;
 	}
 	
+	*/
 	
-	public void updatePowered(){return;}
+	public boolean updatePowered(){return false;}
 	
 	public static String modeToString(byte mode) {
 		switch(mode) {

@@ -46,6 +46,7 @@ public class Oscilloscope extends Element implements Serializable{
 		game = p.game;
 		data = new LLinkedList<Boolean>();
 		datawidth = (getWidth()- 100)/(capacity-1);
+		updateProbe();
 	}
 	
 	
@@ -70,9 +71,18 @@ public class Oscilloscope extends Element implements Serializable{
 		requeststop = true;
 	}
 	
-	public void start() {
-		updateProbe();
-		GameArea.tickscheduler.call(new RepeatUpdateData()); 
+	// Collects for this oscilliscope
+	public void collect() {
+		// Records the value at probe location.
+		data.addFirst(getData());
+		size++;
+		
+		// Take off excess elements
+		if(size >= capacity) {
+			data.removeLast();
+			size--;
+		}
+		requestUpdate();
 	}
 	
 	public boolean getData() {
@@ -98,54 +108,30 @@ public class Oscilloscope extends Element implements Serializable{
 		g.noStroke();
 		g.fill(0);
 		ListIterator<Boolean> iter = data.iterator();
-		
 		for(int i = 0; iter.hasNext(); i++) {
 			if(iter.next()) {
 				g.rect(100 + i*datawidth, getHeight()/2-5, datawidth, 10);
 			}
 		}
-		g.stroke(200,200,200,50);
-		for(int i = 0; i< capacity; i++) {
+		g.stroke(0);
+		g.line(100, 0, 100, getHeight());
+		
+		// demarcation lines
+		for(int i = 1; i< capacity; i++) {
+			int barnum = game.display.time - i;
+			// barnum & -barnum gets the highest power of 2 that is divisible
+			// Lines with greater powers of 2 are darker.
+			g.stroke(100,100,100,2 + 12*(barnum & -barnum));
 			g.line(100+ i*datawidth, 0, 100+ i*datawidth, getHeight());
 		}
 		
 		
-		//Display num
+		//Display ID
 		g.textAlign(CENTER,CENTER);
 		g.text(id, getHeight()/2,getHeight()/2);
 		
 		
 		
 	}
-	
-	public class RepeatUpdateData extends ActiveAsyncEvent {
-		
-		@Override
-		public void run() {
-			// Records the value at probe destination.
-			data.addFirst(getData());
-			size++;
-			
-			// Take off excess elements
-			if(size >= capacity) {
-				data.removeLast();
-				size--;
-			}
-			requestUpdate();
-		}
 
-		@Override
-		public boolean condition() {
-			if(!exists) return false;
-			if(!game.running) {
-				requeststop = false;
-				return false;
-			}
-			if(requeststop) {
-				reset();
-				return false;
-			}
-			return true;
-		}
-	}
 }

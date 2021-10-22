@@ -84,7 +84,7 @@ public abstract class MapNavigator extends Container{
 	}
 
 	public void addZoom(float z, float x ,float y) {
-		addZoom(z,new PVector(x,y));
+		addZoom(z, new PVector(x,y));
 	}
 
 	public float getMaxZoom() {

@@ -2,6 +2,8 @@ package game;
 
 import util.LLinkedList;
 import static util.DB.*;
+
+import util.Heap;
 /* A non connectable wire that has modifeid conductance properties
  * only updates are permitte`d through external toggle, throught the 
  * toggle() function.
@@ -44,47 +46,26 @@ public class Power extends WireSegment{
 			}
 		}
 	}
-	public void updatePowered() {
-		if(requesttoggle) {
-			requesttoggle = false;
-			toggled = !toggled;
-		}
+	@Override
+	public boolean updatePowered() {
+		if(!requesttoggle) return false;
+		requesttoggle = false;
+		toggled = !toggled;
+		return true;
 	}
 	public boolean isToggled() {
 		return toggled;
 	}
 	
+
 	@Override
-	public void updateActive(LLinkedList<WireSegment> current, LLinkedList<WireSegment> next) {
-		if(toggled) {
-			setActive(Integer.MIN_VALUE);
-		}else {
-			setActive(WIRE_OFF);
-		}
-		
-		//update wire state and queue updates for appropriate neighbors.
-		if(toggled) {
-			for(WireSegment connection : connections) {
-				connection = (WireSegment)connection.getAncestor();
-				if(!connection.isActive() && connection.isPermissive() && !connection.updatablecurrent) {
-					current.add(connection);
-					connection.updatablecurrent = true;
-				}
-			}
-		} else {
-			for(WireSegment connection : connections) {
-				connection = (WireSegment)connection.getAncestor();
-				if(connection.isActive() && connection.isPermissive() && !connection.updatablecurrent) {
-					current.add(connection);
-					connection.updatablecurrent = true;
-				}
-			}
-		}
-		updatablecurrent = false;
-		// No gate updates as power is a metal type and cannot connect to gates.
-		
+	public boolean updateActive() {
+		if((active == Integer.MIN_VALUE) == toggled) return false; 
+		active = toggled? Integer.MIN_VALUE: WIRE_OFF;
+		return true;
 	}
-	
+
+	@Override
 	public boolean isPermissive() {
 		return false;	
 	}

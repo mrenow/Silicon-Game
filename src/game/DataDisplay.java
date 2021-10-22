@@ -18,6 +18,9 @@ public class DataDisplay extends ScrollPane{
 
 	final static int MAX_SCOPES = 20;
 	private int numscopes = 0;
+	// For drawing 2-4-8-16 tick markers
+	public int time = 0;
+	
 	public LLinkedList<Oscilloscope> scopes = new LLinkedList<Oscilloscope>();
 	public DataDisplay(float x, float y, float w, float h, Container p, GameArea g) {
 		super(x, y, w, h, ScrollPane.SCROLL_Y, p);
@@ -66,19 +69,18 @@ public class DataDisplay extends ScrollPane{
 		setPaneHeight(y);
 		requestUpdate();
 	}
-	// Turn all scopes on
-	// Scopes will turn themselves off when the circuit stops.
-	public void activate() {
+	// Collects data and writes to oscilliscopes.
+	public void collectAll() {
 		for(Oscilloscope o : scopes) {
-			o.start();
+			o.collect();
 		}
+		time++;
 	}
 	public void updateProbes() {
 		for(Oscilloscope o : scopes) {
 			o.updateProbe();
 		}
 	}
-	
 	public Object getSave() {
 		ArrayList<ScopeData> data = new ArrayList<ScopeData>();
 		for (Oscilloscope o: scopes) {

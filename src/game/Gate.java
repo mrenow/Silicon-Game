@@ -1,6 +1,8 @@
 package game;
 import static core.MainProgram.*;
 import static util.DB.*;
+
+import util.Heap;
 import util.LLinkedList;
 
 
@@ -11,23 +13,41 @@ import util.LLinkedList;
 //
 public class Gate extends WireSegment{
 	
-	
 	LLinkedList<WireSegment> inputs;
-	
-	boolean permissive = (mode == P_GATE);
+	boolean permissive;
 	
 	public Gate(byte mode, int x, int y) {
 		super(mode, x,y);
 		inputs = new LLinkedList<WireSegment>();
+		permissive = (mode == P_GATE);
 	}
 	
+	// Checks if a wiresegment state is valid.
+	@Override
+	public boolean updateActive() {
+		
+		if (!permissive) {
+			if(active != WIRE_OFF) {
+				active = WIRE_OFF;
+				return true;
+			}else {
+				return false;		
+			}
+		}
+		return super.updateActive();
+	}
+	@Override
 	public boolean isPermissive() {
 		//N gate becomes permissive when powered
 		return permissive;
 	}
-	
-	public void updatePowered() {
-		permissive = (mode == N_GATE) == getPowered();
+
+	@Override
+	public boolean updatePowered() {
+		boolean newpermissive = (mode == N_GATE) == getPowered();
+		if(permissive == newpermissive) return false;
+		permissive = newpermissive;
+		return true;
 	}
 	
 	
@@ -74,31 +94,7 @@ public class Gate extends WireSegment{
 		}
 	}
 	
-	public void updateActive(LLinkedList<WireSegment> current, LLinkedList<WireSegment> next) {
-		isupdating = true;
-		//if segment is gate, do not permit flow based on gate type
-		if(isPermissive()) super.updateActive(current,next);
-		// Not permissive
-		else{
-			for (Gate g : gates) {
-				if(g.getPowered()&& !g.updatablenext) {
-					next.add(g);
-					g.updatablenext = true;
-				}
-			}
-			for (WireSegment connection : connections) {
-				connection = (WireSegment)connection.getAncestor();
-				// For all unpowered wires adjacent, tell them to update cos we just turned off.
-				if(connection.getActive() != WIRE_OFF && !connection.updatablecurrent) {
-					current.add(connection);	
-					connection.updatablecurrent = true;
-				}
-			}
-			setActive(WIRE_OFF);
-			updatablecurrent = false;
-		}
-		isupdating = false;
-	}
+
 	
 	public boolean powered() {
 		return (mode == N_GATE) == permissive;
@@ -107,7 +103,7 @@ public class Gate extends WireSegment{
 
 	public boolean getPowered() {
 		for(WireSegment w : inputs) {
-			if(w.getActive() != WIRE_OFF) return true;
+			if(w.isOn()) return true;
 		}
 		return false;
 	}

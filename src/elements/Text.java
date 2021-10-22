@@ -63,6 +63,9 @@ public class Text extends Element {
 		g.text(text, 0, 0, getWidth(), getHeight());
 
 	}
+	public String getText() {
+		return text;
+	}
 
 	public void setText(String text) {
 		this.text = text;

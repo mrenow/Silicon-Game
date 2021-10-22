@@ -4,6 +4,8 @@ import static core.MainProgram.*;
 import static processing.core.PConstants.CENTER;
 import static util.DB.*;
 
+import java.io.File;
+
 import core.Images;
 import elements.BasicButton;
 import elements.Container;
@@ -11,6 +13,7 @@ import elements.ImageButton;
 import elements.Screen;
 import elements.ScrollPane;
 import elements.Text;
+import game.LevelSave;
 
 public class MenuScreen extends Screen{
 	
@@ -111,14 +114,20 @@ public class MenuScreen extends Screen{
 				}
 			};
 			play.setMode(ImageButton.CENTERED);
-			delete = new ImageButton(getWidth() - 2*buttonsiz - 40, 5, buttonsiz, buttonsiz, Images.FORWARD_ARROW, this) {
-				public void elementReleased() {
-					
-				}
-			};
-
-			delete.setMode(ImageButton.CENTERED);
-			
+			File f = new File(LevelSave.getFileFromName(namelabel.getText()));
+			if(f.exists()) {
+				delete = new ImageButton(getWidth() - 2*buttonsiz - 40, 5, buttonsiz, buttonsiz, Images.TRASH_ICON, this) {
+					File f = new File(LevelSave.getFileFromName(namelabel.getText()));
+					public void elementReleased() {
+						f.delete();
+						delete.destroyAll();
+						delete = null;
+						
+					}
+				};
+	
+				delete.setMode(ImageButton.CENTERED);
+			}
 		}
 		
 		//draw border.

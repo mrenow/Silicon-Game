@@ -28,10 +28,16 @@ public class Heap<T> {
 		objects = (T[]) new Object[DEFAULT_SIZE];
 	}
 
-	Heap(boolean descending) {
+	public Heap(boolean descending) {
 		DECENDING = descending;
 		data = new int[DEFAULT_SIZE];
 		objects = (T[]) new Object[DEFAULT_SIZE];
+	}
+	
+	public Heap(int size, boolean descending) {
+		DECENDING = descending;
+		data = new int[size];
+		objects = (T[]) new Object[size];
 	}
 
 	// add to bottom of heap

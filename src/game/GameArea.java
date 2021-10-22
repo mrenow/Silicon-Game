@@ -18,6 +18,7 @@ import processing.core.PVector;
 import util.DB;
 import util.LLinkedList;
 import util.SparseQuadTree;
+import util.Heap;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -105,6 +106,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		offset = new PVector(0, 0);
 
 		tiles = new SparseQuadTree<WireSegment>(size);
+		currentwireupdates = new Heap<WireSegment>(4*dimx, true);
 		WireSegment.container = tiles;
 		WireSegment.potentialdisconnects.clear();
 		
@@ -141,6 +143,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	protected void update() {
 		resetGraphics();
 		
+		// render visible objects only
 		LLinkedList<WireSegment> objects = new LLinkedList<WireSegment>(tiles.get(floor(offset.x),
 				floor(offset.y), ceil(offset.x + getWidth() / zoom), ceil(offset.y + getHeight() / zoom))); 
 
@@ -176,8 +179,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	
 	
 	private void drawObjects(Iterable<WireSegment> objects) {
-		
-		// Only loads objects within viewing pane
 		// New linked list for optimization to remove start and end nodes.
 
 		WireSegment w = null;		
@@ -428,7 +429,14 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			
 			if(canedit) {
 				g.text(Integer.toString(w.parentnum) + ", " + Integer.toString(w.childnum), w.x + 0.1f, w.y + 0.1f);
+			// Denotes currently updating wiresegment.
+			}else if(w.isupdating){
+				g.rect(w.x,w.y,0.2f,0.2f);
+			// Denotes membership of update queue
+			}else if (w.updatablecurrent) {
+				g.rect(w.x+0.8f, w.y, .2f, .2f);
 			}
+		
 			
 		}
 
@@ -459,6 +467,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		PVector bottomright = localToMapPos(getWidth(),getHeight());
 		int linelength = 5;
 		float x,y;
+		
 		for(int i = ceil(topleft.x); i< bottomright.x; i++) {
 			x = mapToLocalX(i);
 			
@@ -467,14 +476,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				g.text(Integer.toString(i),mapToLocalX(i + 0.5f),linelength);
 			}
 		}
+		
 		for(int i = ceil(topleft.y); i< bottomright.y; i++) {
 			y = mapToLocalY (i);
 			g.line(0,y,linelength, y);
 			if(i >= 0) {
 				g.text(Integer.toString(i),linelength,mapToLocalY(i + 0.5f));
 			}
-			
-			
 		}
 		
 		// draw tile info at cursor:
@@ -853,7 +861,8 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			boolean isvalid = false;
 			while(iter.hasNext()) {
 				w2 = iter.next();
-			
+
+
 				if(w1.canConnect(w2)) {
 					if( !w1.isSameSet(w2)) { 
 						DB_U("rectified", w2,w1);
@@ -887,14 +896,11 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		
 		//globalscheduler.call(new RunActivateSquare(x,y));
 
-		
-		
 		for(WireSegment w : tiles.get(x, y)) {
 			if(w instanceof Power) {
 				((Power)w).toggle(nextwireupdates);
 			}
 		}
-	
 		
 		if(canedit && makemode != MAKE_SCOPE) {
 			if (p3.mouseButton == RIGHT) {
@@ -1093,6 +1099,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			activateSquare(floor(pos2.x), floor(pos2.y));
 
 			if (abs(pos2.x - pos1.x) > abs(pos2.y - pos1.y)) {
+				// ensure pos2 > pos1
 				if (pos2.x < pos1.x) {
 					PVector c = pos2;
 					pos2 = pos1;
@@ -1296,7 +1303,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
  	 */
 	
 	//to be updated in this tick
-	private LLinkedList<WireSegment> currentwireupdates = new LLinkedList<WireSegment>();
+	private Heap<WireSegment> currentwireupdates;
 	//to be updated next tick
 	private LLinkedList<WireSegment> nextwireupdates = new LLinkedList<WireSegment>();
 	
@@ -1316,7 +1323,6 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		display.updateProbes();
 		if(!running) {
 			tickscheduler.call(new RepeatIterate());
-			display.activate();
 		}
 	}
 	public void stop() {
@@ -1357,33 +1363,73 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	}
 	
 	
-	
+	private void queueNext(WireSegment w) {
+		if(w.updatablenext) return;
+		nextwireupdates.add(w);
+		w.updatablenext = true;
+	}
+
+	private void queueCurrent(int priority, WireSegment w) {
+		if(w.updatablecurrent) return;
+		currentwireupdates.add(priority, w);
+		w.updatablecurrent = true;
+	}
 	// runs signal spreading logic
 	private void iterate() {
 		
+		// Update Gates and power sources
+		
+		// Update Powered first, as updateActive interferes with the condition
+		// If updatePowered does not result in a change of state, no update should occur.
+		ListIterator<WireSegment> nextiterator = nextwireupdates.iterator();
+		while(nextiterator.hasNext()) {
+			if(!nextiterator.next().updatePowered()) {
+				nextiterator.remove();
+			}
+		}
 		for (WireSegment w : nextwireupdates) {
-			w = (WireSegment)w.getAncestor();
-			w.updatePowered();
-			currentwireupdates.add(w);
-			w.updatablecurrent = true;
+			// Active must change to warrant updating neighbors.
+			if(w.updateActive()) {
+				for (WireSegment conn: w.connections) {
+					conn = conn.getAncestor();
+					
+					if(conn.isPermissive() && conn.isOn() != w.isOn()) {
+						if(!conn.isOn()) conn.active = w.active + 1;
+						queueCurrent(conn.active, conn);
+					}
+				}
+			}
 			w.updatablenext = false;
 		}
 		nextwireupdates.clear();
 		
-		while(!currentwireupdates.empty()) {
-			// Makes new iterator and continuously updates through queued updates
-			ListIterator<WireSegment> iter = new LLinkedList<WireSegment>(currentwireupdates).iterator();
-			for(WireSegment w : currentwireupdates) {
-				w.updatablecurrent = false;
-			}			
-			currentwireupdates.clear();
-			while(iter.hasNext()) {
-				//adds update requests to both queues.
-				iter.next().updateActive(currentwireupdates, nextwireupdates);
-				
-			}
+		// Update regular wires
+		while(!currentwireupdates.isEmpty()) {
+			WireSegment w = currentwireupdates.pop();
+			DB_ASSERT(w.updatablecurrent, true);
 			
+			w.isupdating = true;
+			
+			DB_ASSERT(w.isAncestor(), true);
+			// Responsible for turning w off if necessary.
+			w.updateActive();
+			for (WireSegment conn: w.connections) {
+				conn = conn.getAncestor();
+	
+				if(conn.isPermissive() && conn.isOn() != w.isOn()) {
+					// Ensure queue occurs with correct priority
+					if(!conn.isOn()) conn.active = w.active + 1;
+					queueCurrent(conn.active, conn);
+				}
+			}
+			// Queue all gates for update.
+			// A few updates might be unnecessary, but thats OK.
+			for(Gate g: w.gates) queueNext(g);
+			
+			w.updatablecurrent = false;
+			w.isupdating = false;
 		}
+		display.collectAll();
 		requestUpdate();
 	}
 	

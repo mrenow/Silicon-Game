@@ -15,31 +15,25 @@ public class ToggleButton extends BasicButton{
 		ClickEvents.add(this);
 	}
 
-	@Override
-	protected
-	void update() {
-		super.update();
-		// t.setStroke(t.DEFAULT_STROKE);
-	}
 	// Misuse of OOP... oh well, in the name of code reuse I guess
 	@Override
 	public void elementClicked() {
 		if(enabled) {
-			textbox.setFill(fillpressed);
 			pressed = !pressed;
 		}
-		textbox.setFill(pressed ? fillpressed : fill);
-		
 	}
 	@Override
 	public void elementReleased() {
 	}
-	
 	public void toggle() {
 		pressed = !pressed;
+		requestUpdate();
 	}
 	public void setToggled(boolean t) {
-		pressed = t;
+		if (pressed != t) {
+			pressed = t;
+			requestUpdate(); 
+		}
 	}
 	public boolean isToggled(){
 		return pressed;
@@ -47,6 +41,7 @@ public class ToggleButton extends BasicButton{
 
 	void setText(String text) {
 		textbox.setText(text);
+		requestUpdate();
 	}
 
 }

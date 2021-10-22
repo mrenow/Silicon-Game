@@ -46,6 +46,7 @@ public class BasicButton extends AbstractButton {
 	@Override
 	protected
 	void update() {
+		textbox.setFill(pressed? fillpressed : fill);
 		super.update();
 		// t.setStroke(t.DEFAULT_STROKE);
 	}
@@ -56,15 +57,17 @@ public class BasicButton extends AbstractButton {
 
 	public void elementClicked() {
 		if(enabled) {
-			textbox.setFill(fillpressed);
 			pressed = true;
+			textbox.setFill(pressed? fillpressed : fill);
+			requestUpdate();
 		}
 	}
 
 	public void elementReleased() {
 		if(enabled) {
-			textbox.setFill(fill);
 			pressed = false;
+			textbox.setFill(pressed? fillpressed : fill);
+			requestUpdate();
 		}
 	}
 

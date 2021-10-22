@@ -124,7 +124,7 @@ public abstract class Element {
 		// if updatable is true, then that implies that ancestors are
 		// pending an update too and we dont need to ask them to update.
 		if (updatable == 0 && parent != null) {
-			parent.requestUpdate();
+			parent.requestUpdate(UPDATE_DRAW);
 		}
 		updatable = max(updatable, level);
 		
@@ -189,8 +189,7 @@ public abstract class Element {
 
 	public void setVisibility(boolean b) {
 		visible = b;
-		// no need to update current element
-		parent.requestUpdate();
+		requestUpdate();
 	}
 
 	public boolean isVisible() {

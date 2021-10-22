@@ -26,6 +26,7 @@ import events.KeyEvents;
 import events.Saveable;
 import game.DataDisplay;
 import game.GameArea;
+import game.LevelSave;
 import game.Oscilloscope;
 import game.WireSegment;
 import game.Power;
@@ -45,7 +46,7 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 	GameArea game;
 	DataDisplay display;
 	
-	BasicButton startbutton,stopbutton;
+	BasicButton startbutton,stopbutton, stepbutton;
 	
 	ToggleButton pausebutton;
 	
@@ -63,7 +64,7 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 		// Try load from file
 		
 		ObjectInputStream oistream = null;
-		String location = "data/level_" + name + ".bin";
+		String location = LevelSave.getFileFromName(name);
 		try {
 			println("Trying to load from " + location);
 			oistream = new ObjectInputStream(new FileInputStream(location));
@@ -103,6 +104,7 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 					startbutton.setEnabled(false);
 					stopbutton.setEnabled(true);
 					pausebutton.setVisibility(true);
+					
 					modetext.setText("Simulate Mode");
 				}
 			}
@@ -122,7 +124,10 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 					game.reset();
 					stopbutton.setEnabled(false);
 					startbutton.setEnabled(true);
+					pausebutton.setToggled(false);
 					pausebutton.setVisibility(false);
+					stepbutton.setVisibility(false);
+					
 					modetext.setText("Build Mode");
 				}
 			}
@@ -140,8 +145,10 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 				super.elementClicked();
 				if(pressed) {
 					game.stop();
+					stepbutton.setVisibility(true);
 				}else {
 					game.run();
+					stepbutton.setVisibility(false);
 				}
 			}
 		};
@@ -151,6 +158,20 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 		pausebutton.setStrokeHovered(p3.color(255,160,160));
 		pausebutton.setFill(p3.color(145, 113, 49));
 		pausebutton.setVisibility(false);
+		
+		stepbutton = new BasicButton(getWidth()- (offset+=spacing + buttonwidth), 0, buttonwidth, 50, "step", this) {
+			@Override
+			public void elementClicked(){
+				super.elementClicked();
+				game.step();
+			}
+		};
+		stepbutton.setFillPressed(p3.color(200, 170, 50));
+		stepbutton.setStroke(p3.color(145, 113, 49));
+		stepbutton.setStrokeHovered(p3.color(255,160,160));
+		stepbutton.setFill(p3.color(255, 230, 50));
+		stepbutton.setVisibility(false);
+		
 		
 		modetext = new Text(0, 0, 0, 50, "Simulate Mode",this);
 		
