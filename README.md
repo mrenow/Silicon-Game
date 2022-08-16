@@ -10,4 +10,6 @@ The differences are primarily:
 - Ability to pause and step logic simulation
 - Lots of datastructure optimizations to handle such a large grid space, hoping that I can eventually build a small computer in it.
 
+Heres a circuit which runs the collatz function `(n) => n%2==1 ? 3n+1 : n/2` every clock cycle.
 
+![2022-08-17 02-17-20](https://user-images.githubusercontent.com/18377830/184942688-b492d9ac-e74f-48e7-9bc2-e134a2d385d7.gif)
