@@ -8,7 +8,7 @@ Essentially, you form gates at P (Yellow) and N (Red) type silicon junctions. NP
 
 Metal is a second layer to the silicon, and connections can be made between the layers by placing vias (Circles).
 
-![image](https://user-images.githubusercontent.com/18377830/184944458-c8dec002-fc69-4cae-bef3-b80e4e4083e8.png)
+![image](https://user-images.githubusercontent.com/18377830/184944838-9151d4ea-e8eb-4ae3-b4fe-7d70ebfd62e7.png)
 
 Now one key feature about Zachtronics' game that I really didnt like is that it ended. So I made a sandbox version, with a few modified mechanics and some extra features.
 The differences are primarily:
