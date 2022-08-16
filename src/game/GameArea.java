@@ -67,10 +67,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 	final static int P_TYPE_INACTIVE_COLOR = p3.color(100,100,0);
 	final static int N_TYPE_ACTIVE_COLOR = p3.color(140,0,0);
 	final static int P_TYPE_ACTIVE_COLOR = p3.color(220,220,0);
-	final static int METAL_INACTIVE_COLOR = p3.color(100, 100, 100, 160);
+	final static int METAL_INACTIVE_COLOR = p3.color(15, 15, 65, 150);
 	final static int METAL_ACTIVE_COLOR = p3.color(255,255,255,140);
 	final static int METAL_ACCENT_COLOR = p3.color(200,200,200,70);
-	final static int SCOPE_COLOR = p3.color(0,144,0,70);
+
+	final static int VIA_COLOR = p3.color(100, 100, 100, 200);
+	
+	final static int SCOPE_COLOR = p3.color(0,144,0,130);
 	final static int SCOPE_TEXT_COLOR = p3.color(0,200,33);
 	
 	
@@ -177,10 +180,9 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		drawChildren();
 	}
 	
-	
 	private void drawObjects(Iterable<WireSegment> objects) {
+		long st = System.nanoTime();
 		// New linked list for optimization to remove start and end nodes.
-
 		WireSegment w = null;		
 		Gate g1 = null;
 		// Draw N silicon
@@ -303,17 +305,31 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 
 		
 		// Draw Power
-		g.stroke(METAL_ACCENT_COLOR);
-		g.strokeWeight(0.06f);
 		witer = (ListIterator<WireSegment>) objects.iterator();
-		g.fill(METAL_INACTIVE_COLOR);
 		while (witer.hasNext()) {
 			w = witer.next();
 			if(w.mode == WireSegment.POWER) {
 				if(!canedit && w.isActive()) {
 					active.add(w);
 				} else {
+
+					g.strokeWeight(0.2f);
+					g.fill(METAL_INACTIVE_COLOR);
+					g.stroke(METAL_ACCENT_COLOR);
 					g.rect(w.x, w.y, 1, 1);
+
+					g.strokeWeight(0.08f);
+					g.noFill();
+
+
+					if (w.isOn()) g.stroke(0);
+					else g.stroke(METAL_INACTIVE_COLOR);
+					g.line(w.x + 0.5f, w.y + 0.2f, w.x + 0.5f, w.y+0.4f);
+
+					if (w.isOn()) g.stroke(METAL_INACTIVE_COLOR);
+					else g.stroke(0);
+					g.ellipse(w.x+0.5f, w.y+0.65f, 0.23f, 0.23f);
+
 				}
 				witer.remove();
 				
@@ -322,13 +338,28 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		}
 		// Active Power
 		g.fill(METAL_ACTIVE_COLOR);
+		g.stroke(METAL_ACCENT_COLOR);
+		g.strokeWeight(0.2f);
 		for(WireSegment w1 : active) {
 			g.rect(w1.x, w1.y, 1, 1);
+			g.strokeWeight(0.08f);
+			g.noFill();
+
+			if (w1.isOn()) g.stroke(0);
+			else g.stroke(METAL_ACTIVE_COLOR);
+			g.line(w1.x + 0.5f, w1.y + 0.2f, w1.x + 0.5f, w1.y+0.4f);
+
+			if (w1.isOn()) g.stroke(METAL_ACTIVE_COLOR);
+			else g.stroke(0);
+			g.ellipse(w1.x+0.5f, w1.y+0.65f, 0.23f, 0.23f);
+
 		}
 		active.clear();
 		
 		//draw vias 
 		witer = (ListIterator<WireSegment>) objects.iterator();
+		g.stroke(VIA_COLOR);
+		g.strokeWeight(0.1f);
 		g.noFill();
 		while (witer.hasNext()) {
 			w = witer.next();
@@ -337,11 +368,13 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				witer.remove();
 			}
 		}
+		System.out.println("drawObjects: " + (System.nanoTime()-st));
 	}
 	private void drawScopes() {
 		//draw scopes
 		g.noFill();
 		g.stroke(SCOPE_COLOR);
+		g.strokeWeight(0.2f);
 		for(Oscilloscope o : display.scopes) {
 			g.rect(o.x, o.y, 1, 1);
 		}
@@ -376,9 +409,9 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 		PVector v = new PVector(w2.x - w1.x,w2.y - w1.y);
 		
 		g.line(w1.x+0.5f, w1.y+0.5f, w2.x  + 0.5f,w2.y+0.5f);
-		v.rotate(PI/6).mult(-0.3f);
+		v.rotate(PI/12).normalize().mult(-0.2f);
 		g.line(w2.x+0.5f,w2.y+0.5f,w2.x + v.x + 0.5f, w2.y + v.y + 0.5f);
-		v.rotate(-PI/3);
+		v.rotate(-PI/6);
 		g.line(w2.x+0.5f,w2.y+0.5f,w2.x  + v.x + 0.5f, w2.y + v.y + 0.5f);
 	}
 	
@@ -584,7 +617,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				g.noStroke();
 				if(KeyEvents.key[VK_SILICON]) {
 					// N_TYPE
-					g.fill(140,0,0,70);
+					g.fill(N_TYPE_INACTIVE_COLOR);
 					// if silicon at tile
 					if(tileContains(mousex, mousey, WireSegment.P_TYPE)) {
 						g.rect(mousex + 0.1f,mousey+0.1f,0.8f,0.8f);
@@ -593,7 +626,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 					}
 				}else {
 					// P_TYPE
-					g.fill(220, 220, 0, 70);
+					g.fill(P_TYPE_INACTIVE_COLOR);
 					if(tileContains(mousex, mousey, WireSegment.N_TYPE)) {
 						g.rect(mousex + 0.1f, mousey + 0.1f, 0.8f, 0.8f);
 					}else {
@@ -604,19 +637,19 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 				break;
 			case MAKE_METAL:
 				g.noStroke();
-				g.fill(100, 100, 100, 70);
+				g.fill(METAL_INACTIVE_COLOR);
 				g.rect(mousex, mousey, 1,1);
 				break;
 			case MAKE_VIA:
 				g.strokeWeight(0.1f);
-				g.stroke(100,100,100,70);
+				g.stroke(VIA_COLOR);
 				g.noFill();
 				g.ellipse(mousex + 0.5f, mousey + 0.5f, 0.7f, 0.7f);
 				break;
 			case MAKE_POWER:
-				g.strokeWeight(0.1f);
-				g.fill(100, 100, 100, 70);
-				g.stroke(100,100,100,70);
+				g.strokeWeight(0.2f);
+				g.fill(METAL_INACTIVE_COLOR);
+				g.stroke(METAL_ACCENT_COLOR);
 				g.rect(mousex, mousey, 1,1);
 				break;
 			case EDIT:
@@ -647,7 +680,7 @@ public class GameArea extends MapNavigator implements KeyListener, ClickListener
 			}
 		}
 		if(makemode == MAKE_SCOPE) {
-			g.strokeWeight(0.1f);
+			g.strokeWeight(0.2f);
 			g.noFill();
 			g.stroke(0,144,0,70);
 			g.rect(mousex, mousey, 1,1);

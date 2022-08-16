@@ -22,15 +22,23 @@ public class Power extends WireSegment{
 	}
 	
 	public void toggle(LLinkedList<WireSegment> next) {
-		if(!requesttoggle) {
-			requesttoggle = true;
+
+		if(requesttoggle) {
+			next.remove(this);
+		} else {
 			next.add(this);
 		}
+
+		requesttoggle = !requesttoggle;
 	}
 	public void toggle(LLinkedList<WireSegment> next,boolean val) {
 		if(toggled != val) {
 			toggle(next);
 		}
+	}
+	@Override
+	public boolean isOn() {
+		return toggled != requesttoggle;
 	}
 	
 	

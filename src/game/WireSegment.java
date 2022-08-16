@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
+import processing.core.PGraphics;
 import processing.core.PVector;
 import util.DisjointSet;
 import util.Heap;
@@ -20,7 +21,13 @@ public class WireSegment extends DisjointSet implements Serializable {
 	//assigned depending on gameArea context.
 	public static SparseQuadTree<WireSegment> container;
 	public static LLinkedList<WireSegment> potentialdisconnects = new LLinkedList<WireSegment>(); 
-	
+
+// work on enums later
+//	enum TYPE {
+//		METAL,
+//		N_TYPE,
+//		P_TYPE,
+//		}
 	public static final byte METAL = 0;
 	public static final byte N_TYPE = 1;
 	public static final byte P_TYPE = 2;
@@ -33,7 +40,20 @@ public class WireSegment extends DisjointSet implements Serializable {
 	public static final byte[] METAL_LAYER = {METAL,POWER};	
 	public static final byte[] VIA_LAYER = {VIA};	
 	
+	
+	final static int N_TYPE_INACTIVE_COLOR = p3.color(50,0,0);
+	final static int P_TYPE_INACTIVE_COLOR = p3.color(100,100,0);
+	final static int N_TYPE_ACTIVE_COLOR = p3.color(140,0,0);
+	final static int P_TYPE_ACTIVE_COLOR = p3.color(220,220,0);
+	final static int METAL_INACTIVE_COLOR = p3.color(70, 70, 70, 200);
+	final static int METAL_ACTIVE_COLOR = p3.color(255,255,255,140);
+	final static int METAL_ACCENT_COLOR = p3.color(200,200,200,70);
 
+	final static int VIA_COLOR = p3.color(100, 100, 100, 200);
+	
+	final static int SCOPE_COLOR = p3.color(0,144,0,130);
+	final static int SCOPE_TEXT_COLOR = p3.color(0,200,33);
+	
 	
 	// individual info
 	
@@ -78,6 +98,10 @@ public class WireSegment extends DisjointSet implements Serializable {
 		// oinfo = new ObjectInfo(x, y);
 	}
 	
+	public void draw(PGraphics g) {
+		
+		
+	}
 	
 	
 	protected void clearInfo() {

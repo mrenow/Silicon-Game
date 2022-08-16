@@ -33,12 +33,17 @@
  * - Most of the logic system now exists in iterate()
  * - + Fixed a bug where "zero tick pulses" were possible.
  * - + More refactoring!
- * 
+ * 1.2
+ * - Changed metal to be darker. It was kinda hard to see.
+ * - Changed arrows to be less obnoxious.
  * Current Bugs:
  *  ? Highly connected wires tend to create infinite update loops 
  *  ? Perhaps related, highly connected wires also tend to hang the update thread.
  *  (Above may be mostly fixed.)
- *  
+ * - Sometimes power sources stop working
+ * - Saving has a weird behaviour where seemingly multiple worlds can be created in one file, and are selected at random. Investigate.
+ * - Sometimes escape stops working to cancel paste.
+ * - Selection can occur during pause state.
  */
 
 

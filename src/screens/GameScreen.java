@@ -4,6 +4,7 @@ package screens;
 import static core.MainProgram.*;
 
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -211,13 +212,17 @@ public class GameScreen extends Screen implements Saveable, KeyListener{
 	@Override
 	public boolean saveState() {
 		try {
-			ObjectOutputStream oostream = new ObjectOutputStream(new FileOutputStream("data/level_" + name + ".bin"));
+			File dir = new File(String.valueOf(System.getProperty("user.dir")  + "/data"));
+			if (!dir.exists()) dir.mkdir();
+			
+			ObjectOutputStream oostream = new ObjectOutputStream(new FileOutputStream(System.getProperty("user.dir") + "/data/level_" + name + ".bin"));
 
 			oostream.writeObject(game.getSave());
 			// pack up scopes
 
 			oostream.writeObject(display.getSave());
 			oostream.close();
+			println("Saved to " + System.getProperty("user.dir") + "/data/level_" + name + ".bin");
 			return true;
 		}catch(IOException e) {
 			println("Save failed... :( Try again later.");
