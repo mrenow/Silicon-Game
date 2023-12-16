@@ -1,6 +1,6 @@
 # My Year 12 Major Project
 
-Basically a clone of the Zachtronics circuit building flash game [Enginer of the People](https://www.zachtronics.com/kohctpyktop-engineer-of-the-people/)
+Basically a clone of the Zachtronics circuit building flash game [Engineer of the People](https://www.zachtronics.com/kohctpyktop-engineer-of-the-people/)
 
 Essentially, you form gates at P (Yellow) and N (Red) type silicon junctions. NPN gates are blocking until powered, and PNP gates are permissive until powered. N and P type silicon by default will not pass signals between each other.
 
